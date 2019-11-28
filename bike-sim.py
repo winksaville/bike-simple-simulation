@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # bike power calculation
 import math
 import numpy as np
@@ -40,7 +42,7 @@ for t in np.arange(0,10,dt):
     powerNeeded = totalForce * v / eta
     netPower = power - powerNeeded
     # kinetic energy increases by net energy available for dt
-    print "t = %.2f; v=%.1f; drag = %.2f N; F roll = %.2f N; F gravity = %.2f N"%(t, v, fDrag(v), fRolling(grade, mass, v), fGravity(grade, mass))
+    print("t = %.2f; v=%.1f; drag = %.2f N; F roll = %.2f N; F gravity = %.2f N"%(t, v, fDrag(v), fRolling(grade, mass, v), fGravity(grade, mass)))
     v = math.sqrt(v*v + 2 * netPower * dt * eta / mass)
     va.append(v)
     ta.append(t+dt)
