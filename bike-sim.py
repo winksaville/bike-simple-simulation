@@ -50,7 +50,7 @@ for t in np.arange(0,10,dt):
     d += sd # distance traveled
 
     # kinetic energy increases by net energy available for dt
-    print("t = %.2f; v=%.1f; drag = %.2f N; F roll = %.2f N; F gravity = %.2f N d = %.2f m sd = %.2f m"%(t, v, fDrag(v), fRolling(grade, mass, v), fGravity(grade, mass), d, sd))
+    print(f't={t:.2f} v={v:.1f}m/s drag={fDrag(v):.2f}N F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
     pv = v
     v = math.sqrt(v*v + 2 * netPower * dt * eta / mass)
     va.append(v)
