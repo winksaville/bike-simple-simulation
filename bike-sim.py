@@ -30,25 +30,37 @@ def fGravity(grade, mass):
     return g*math.sin(math.atan(grade))*mass
 
 # the actual program:
-v=0.0  # initial velocity
+v=0.0       # initial velocity
 power = 600 # constant power in W
 dt = 0.1    # time step
-va=[0]      # store the results in a list which will grow in each iteration
-ta=[0]
+va=[0]      # velocity array
+ta=[0]      # time array
+da=[0]      # distance array
+pv = 0.0    # previous velocity
+d=0.0       # initial distance
 
 # loop over time:
 for t in np.arange(0,10,dt):
     totalForce = fDrag(v) + fRolling(grade, mass, v) + fGravity(grade, mass)
     powerNeeded = totalForce * v / eta
     netPower = power - powerNeeded
+
+    av = (v + pv) / 2.0 # average velocity
+    sd = av * dt # step distance
+    d += sd # distance traveled
+
     # kinetic energy increases by net energy available for dt
-    print("t = %.2f; v=%.1f; drag = %.2f N; F roll = %.2f N; F gravity = %.2f N"%(t, v, fDrag(v), fRolling(grade, mass, v), fGravity(grade, mass)))
+    print("t = %.2f; v=%.1f; drag = %.2f N; F roll = %.2f N; F gravity = %.2f N d = %.2f m sd = %.2f m"%(t, v, fDrag(v), fRolling(grade, mass, v), fGravity(grade, mass), d, sd))
+    pv = v
     v = math.sqrt(v*v + 2 * netPower * dt * eta / mass)
     va.append(v)
     ta.append(t+dt)
+    da.append(d)
 
 plt.figure()
-plt.plot(ta, va)
-plt.xlabel('time (s)')
+plt.plot(da, va)
+plt.xlabel('distance (m)')
+#plt.plot(ta, va)
+#plt.xlabel('time (s)')
 plt.ylabel('velocity (m/s)')
 plt.show()
