@@ -29,6 +29,13 @@ def fRolling(grade, mass, velocity):
 def fGravity(grade, mass):
     return g*math.sin(math.atan(grade))*mass
 
+def mph(mps):
+    """
+    Meters per second to miles per hour
+    """
+    mpsToMph = 3600.0 / (0.0254 * 12.0 * 5280.0)
+    return mps * mpsToMph
+
 # the actual program:
 v=0.0       # initial velocity
 power = 600 # constant power in W
@@ -50,10 +57,10 @@ for t in np.arange(0,10,dt):
     d += sd # distance traveled
 
     # kinetic energy increases by net energy available for dt
-    print(f't={t:.2f} v={v:.1f}m/s drag={fDrag(v):.2f}N F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
+    print(f't={t:.2f} v={mph(v):.1f}mph drag={fDrag(v):.2f}N F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
     pv = v
     v = math.sqrt(v*v + 2 * netPower * dt * eta / mass)
-    va.append(v)
+    va.append(mph(v))
     ta.append(t+dt)
     da.append(d)
 
@@ -62,5 +69,5 @@ plt.plot(da, va)
 plt.xlabel('distance (m)')
 #plt.plot(ta, va)
 #plt.xlabel('time (s)')
-plt.ylabel('velocity (m/s)')
+plt.ylabel('velocity (mph)')
 plt.show()
