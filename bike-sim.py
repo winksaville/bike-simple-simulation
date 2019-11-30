@@ -5,16 +5,32 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-# a few plausible factors from http://www.cyclingpowerlab.com/CyclingAerodynamics.aspx
-dragCoeff = 0.88
-frontalArea = 0.32 
+# Some constants
+bike = 8.62 # kg 19 lbs
+rider = 81.65 # kg 180 lbs
+mass = bike + rider
 
+# I adjusted the frontalArea until max speed calculated here was 17.00mph
+# I estimated the frontalArea from a flat section of a [ride](https://veloviewer.com/athletes/2039/activities/2802129759)
+# I did between time 00:15:47 - 00:17:32. Then in the "Power (meter)" graph for that section I produced
+# an avgerage Power of 142W at an average speed of 17.00mph.  I then twiddled the the frontalArea variable
+# until max speed calculated was 17.00mph.
+#
+# [Here](https://www.triradar.com/training-advice/how-to-calculate-your-drag/) is another method for
+# estimating the forntalArea using photoshop. When I do that I iwll then adjust the dragCoeff variable
+# until the speed is again calculated to be 17.00mph.
+power = 142 # Watts
+frontalArea = 0.449 # Sq meters
+dragCoeff = 0.88
+
+# A few plausible factors from http://www.cyclingpowerlab.com/CyclingAerodynamics.aspx
 rho = 1.2
 eta = 0.97 # 1 - drive train loss = efficiency
 rollingCoeff = 5.0e-3 # from haskell code
-mass = 62 #kg
-grade = 0.0
+
+#grade = 0.0/100.0 #0.0
 g = 9.81
+
 
 # functions to compute the various forces:
 def fDrag(velocity):
@@ -29,6 +45,20 @@ def fRolling(grade, mass, velocity):
 def fGravity(grade, mass):
     return g*math.sin(math.atan(grade))*mass
 
+def slope(dist):
+    """
+    Given the distance in meters find the slope (grade).
+
+    We assume the grade is an undulating sine wave
+    with a constant frequency and amplitude. If amplitude
+    is 0 there is no undulations.
+    """
+    # The cos(sin(x)) is the slope of a line tagent to the sin curve at x
+    freq = 100.0 # 100 meters
+    amplitude = 0.0 / freq # 0.0 for level 1.0 for slight undulation
+    c = math.cos(2.0 * math.pi * (dist / freq)) * amplitude
+    return c
+
 def mph(mps):
     """
     Meters per second to miles per hour
@@ -38,7 +68,6 @@ def mph(mps):
 
 # the actual program:
 v=0.0       # initial velocity
-power = 600 # constant power in W
 dt = 0.1    # time step
 va=[0]      # velocity array
 ta=[0]      # time array
@@ -46,8 +75,12 @@ da=[0]      # distance array
 pv = 0.0    # previous velocity
 d=0.0       # initial distance
 
+#for d in np.arange(0, 100, 0.1):
+#  print(f'd={d:.2f} slope={slope(d):.02f}')
+
 # loop over time:
-for t in np.arange(0,10,dt):
+for t in np.arange(0,150,dt):
+    grade = slope(d)
     totalForce = fDrag(v) + fRolling(grade, mass, v) + fGravity(grade, mass)
     powerNeeded = totalForce * v / eta
     netPower = power - powerNeeded
@@ -57,7 +90,7 @@ for t in np.arange(0,10,dt):
     d += sd # distance traveled
 
     # kinetic energy increases by net energy available for dt
-    print(f't={t:.2f} v={mph(v):.1f}mph drag={fDrag(v):.2f}N F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
+    print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
     pv = v
     v = math.sqrt(v*v + 2 * netPower * dt * eta / mass)
     va.append(mph(v))
