@@ -47,6 +47,21 @@ class TrackPoint:
         c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0-a))
         return radius * c
 
+    def bearing(self, other):
+        """Return bearing in degrees"""
+        y = math.sin(other.lon - self.lon) * math.cos(other.lat)
+        x = (math.cos(self.lat) * math.sin(other.lat)) - \
+                (math.sin(self.lat) * math.cos(other.lat) * math.cos(other.lat - self.lat))
+        return math.degrees(math.atan2(y, x))
+
+    def bearing360(self, other):
+        """Return bearing in degrees"""
+        b = self.bearing(other)
+        if (b < 0):
+            return 360 + b
+        else:
+            return b
+
 if __name__ == '__main__':
     # Compare haversine with TrackPoint.distance
     import timeit
@@ -115,10 +130,36 @@ if __name__ == '__main__':
             d = pt1.distance(pt2)
             self.assertEqual(d, 0.0)
 
-        def test_distance_0(self):
+        def test_distance_non_0(self):
             pt1 = TrackPoint(lat=1.0, lon=2.0)
             pt2 = TrackPoint(lat=1.0, lon=3.0)
             d = pt1.distance(pt2)
             self.assertEqual(round(d, 3), 111178.144)
+
+        def test_bearing_0(self):
+            pt1 = TrackPoint(lat=0.0, lon=90.0)
+            pt2 = TrackPoint(lat=1.0, lon=90.0)
+            b = pt1.bearing(pt2)
+            self.assertEqual(round(b, 3), 0.000)
+
+        def test_bearing_90(self):
+            pt1 = TrackPoint(lat=0.0, lon=90.0)
+            pt2 = TrackPoint(lat=0.0, lon=91.0)
+            b = pt1.bearing(pt2)
+            self.assertEqual(round(b, 3), 90.000)
+
+        def test_bearing_180(self):
+            pt1 = TrackPoint(lat=1.0, lon=90.0)
+            pt2 = TrackPoint(lat=0.0, lon=90.0)
+            b = pt1.bearing(pt2)
+            self.assertEqual(round(b, 3), 180.000)
+
+        def test_bearing_270(self):
+            pt1 = TrackPoint(lat=0.0, lon=90.0)
+            pt2 = TrackPoint(lat=0.0, lon=89.0)
+            b = pt1.bearing(pt2)
+            self.assertEqual(round(b, 3), -90.000)
+            b = pt1.bearing360(pt2)
+            self.assertEqual(round(b, 3), 270.000)
 
     unittest.main()
