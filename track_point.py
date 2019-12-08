@@ -9,33 +9,36 @@ earthR1 = 6_371_008.7714
 
 class TrackPoint:
 
-    def __init__(self, lat=0.0, lon=0.0, ele=0.0):
+    def __init__(self, lat=0.0, lon=0.0, ele=0.0, brg=None, dis=None, radius=earthR1):
         """
-        lat: Latitude in SignedDecDeg, +90 to -80
+        Create a new TrackPoint using either lat, lon and ele to define the point
+        or if brg and dis are supplied then create a new TrackPoint which is located
+        at brg and dis from a starting point at lat lon. Raises a ValueError if brg
+        and dis are not both None or if one is None and the other is not.
+
+        lat: Latitude in SignedDecDeg, +90 to -90
         lon: Longitude in SignedDecDeg, +180 to -180
         ele: Elevation in meters.
+        brg: Bearing in SignedDecDeg from lat, lon to this new point (dis must be supplied)
+        dis: Distance in meters from lat, lon to this new point (brg must be supplied)
+        radius: Radius of sphere only used with when creating a new point using brg and dis
         """
-        self.lat = math.radians(lat)
-        self.lon = math.radians(lon)
         self.ele = ele
-
-    #def __init__(self, sLat, sLon, brg, dis, ele=0.0, radius=earthR1):
-    #    """
-    #    sLat: starting Latitude in SignedDecDeg, +90 to -80
-    #    sLon: starting Longitude in SignedDecDeg, +180 to -180
-    #    brg: Bearing in SignedDecDeg
-    #    dis: Distance from lat, lon to new point
-    #    ele: Elevation in meters.
-    #    radius: Radius of the sphere
-    #    """
-    #    brgRadians = math.radians(brg)
-    #    lat = math.radians(sLat)
-    #    lon = math.radians(sLon)
-    #    self.lat = math.asin((math.sin(lat) * math.cos(dis/radius)) + \
-    #                         (math.cos(lat) * math.sin(dis/radius) * math.cos(brgRadians)))
-    #    self.lon = lat + math.atan2((math.sin(brgRadians) * math.sin(d/radius) * math.cos(lat)),
-    #                                (math.cos(d/radius) - math.sin(lat) * math.sin(self.lat)))
-    #    self.ele = ele
+        if (brg is not None) and (dis is not None):
+            brg = math.radians(brg)
+            lat = math.radians(lat)
+            lon = math.radians(lon)
+            self.lat = math.asin((math.sin(lat) * math.cos(dis/radius)) + \
+                                 (math.cos(lat) * math.sin(dis/radius) * math.cos(brg)))
+            self.lon = lon + math.atan2((math.sin(brg) * math.sin(dis/radius) * math.cos(lat)),
+                                        (math.cos(dis/radius) - (math.sin(lat) * math.sin(self.lat))))
+        elif (brg is None) and (dis is None):
+            self.lat = math.radians(lat)
+            self.lon = math.radians(lon)
+        elif (brg is None):
+            raise ValueError("brg is None but dis is not")
+        else:
+            raise ValueError("dis is None but brg is not")
 
     def __str__(self):
         lat, lon = self.signedDecDegs()
@@ -282,5 +285,31 @@ if __name__ == '__main__':
              y = pt1.distance(pt2)
              #print(f'y is {y}')
              self.assertEqual(round(y, 6), 111195.079734)
+
+        def test_bearing_distance_exception_brg_not_None_dst_is_None(self):
+            self.assertRaises(ValueError, TrackPoint, lat=10.0, lon=20.0, ele=3.0, brg=15.0, dis=None)
+            self.assertRaises(ValueError, TrackPoint, lat=10.0, lon=20.0, ele=3.0, brg=15.0)
+
+        def test_bearing_distance_exception_brg_is_None_dst_is_not_None(self):
+            self.assertRaises(ValueError, TrackPoint, lat=10.0, lon=20.0, ele=3.0, brg=None, dis=1.0)
+            self.assertRaises(ValueError, TrackPoint, lat=10.0, lon=20.0, ele=3.0, dis=1.0)
+
+        def test_bearing_distance_same_point(self):
+             pt1 = TrackPoint(lat=10.0, lon=20.0, ele=3.0)
+             pt2 = TrackPoint(lat=10.0, lon=20.0, ele=3.0, brg=15.0, dis=0.0)
+             self.assertEqual(pt1.lat, pt2.lat)
+             self.assertEqual(pt1.lon, pt2.lon)
+             self.assertEqual(pt1.ele, pt2.ele)
+
+        def test_bearing_distance_different_points(self):
+             pt1 = TrackPoint(lat=10.0, lon=20.0, ele=3.0)
+             pt2 = TrackPoint(lat=11.0, lon=20.0, ele=3.0)
+             distance = pt1.distance(pt2)
+             bearing = pt1.bearing(pt2)
+             pt3 = TrackPoint(lat=10.0, lon=20.0, ele=3.0, brg=bearing, dis=distance)
+             self.assertEqual(pt2.lat, pt3.lat)
+             self.assertEqual(pt2.lon, pt3.lon)
+             self.assertEqual(pt2.ele, pt3.ele)
+
 
     unittest.main()
