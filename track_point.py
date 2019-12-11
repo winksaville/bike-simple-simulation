@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 # Distance and bearing algorithms from https://www.movable-type.co.uk/scripts/latlong.html
 
+from __future__ import annotations
+
 import math
 import numpy as np
 from enum import Enum
+from typing import Tuple
 
 earthR1 = 6_371_008.7714
 
 class TrackPoint:
 
-    def __init__(self, lat=0.0, lon=0.0, ele=0.0, brg=None, dis=None, radius=earthR1):
+    def __init__(self: TrackPoint, lat: float=0.0, lon: float=0.0, ele: float=0.0, brg: float=None, dis: float=None, radius: float=earthR1) -> None:
         """
         Create a new TrackPoint using either lat, lon and ele to define the point
         or if brg and dis are supplied then create a new TrackPoint which is located
@@ -40,20 +43,20 @@ class TrackPoint:
         else:
             raise ValueError("dis is None but brg is not")
 
-    def __str__(self):
+    def __str__(self: TrackPoint) -> str:
         lat, lon = self.signedDecDegs()
         return f"{{'lat': {lat}, 'lon': {lon}, 'ele': {self.ele}}}"
 
 
-    def radians(self):
+    def radians(self: TrackPoint) -> Tuple[float, float]:
         """Return lat, lon as radians"""
         return self.lat, self.lon
 
-    def signedDecDegs(self):
+    def signedDecDegs(self: TrackPoint) -> Tuple[float, float]:
         """Return lat, lon as radians"""
         return math.degrees(self.lat), math.degrees(self.lon)
 
-    def distance(self, other, radius=earthR1):
+    def distance(self: TrackPoint, other: TrackPoint, radius: float=earthR1) -> float:
         """Return distance between other and self in meters"""
         dLat_haversine = math.sin((other.lat - self.lat) / 2.0)
         dLon_haversine = math.sin((other.lon - self.lon) / 2.0)
@@ -61,14 +64,14 @@ class TrackPoint:
         c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0-a))
         return radius * c
 
-    def bearing(self, other):
+    def bearing(self: TrackPoint, other: TrackPoint) -> float:
         """Return bearing in degrees North = 0.0, East = 90.0, South = 180, West = -90"""
         y = math.sin(other.lon - self.lon) * math.cos(other.lat)
         x = (math.cos(self.lat) * math.sin(other.lat)) - \
                 (math.sin(self.lat) * math.cos(other.lat) * math.cos(other.lat - self.lat))
         return math.degrees(math.atan2(y, x))
 
-    def bearing360(self, other):
+    def bearing360(self: TrackPoint, other: TrackPoint) -> float:
         """Return bearing in degrees 0..360"""
         b = self.bearing(other)
         if (b < 0):
@@ -76,15 +79,15 @@ class TrackPoint:
         else:
             return b
 
-    def eleDiff(self, other):
+    def eleDiff(self: TrackPoint, other: TrackPoint) -> float:
         """Eleveation difference between returns other.diff - self.diff"""
         return other.ele - self.ele
 
-    def slopePercent(self, other):
+    def slopePercent(self: TrackPoint, other: TrackPoint) -> float:
         """Slope as a precentage positive for uphill and negative for downhill"""
         return (self.eleDiff(other) / self.distance(other)) * 100.0
 
-    def slopeRadians(self, other):
+    def slopeRadians(self: TrackPoint, other: TrackPoint) -> float:
         """Slope in radians, positive for uphill and negative for downhill"""
         return math.atan2(self.eleDiff(other), self.distance(other))
 
@@ -103,16 +106,16 @@ if __name__ == '__main__':
     #       ptr1.distance(pt2)=111178.1437553196
     #   perf=0.9691372659999615
 
-    pt1 = [1.0, 2.0]
-    pt2 = [1.0, 3.0]
-    d = hs.haversine(pt1, pt2)
-    loops  = 1_000_000
-    print(f'hs.haversine(pt1, pt2)={d}')
-    #print(f'perf={timeit.timeit("hs.haversine(pt1, pt2)", number=loops, globals=globals())}')
+    hpt1: Tuple[float, float] = 1.0, 2.0
+    hpt2: Tuple[float, float] = 1.0, 3.0
+    hd: float = hs.haversine(hpt1, hpt2)
+    print(f'hs.haversine(hpt1, hpt2)={hd}')
+    #loops: int  = 1_000_000
+    #print(f'perf={timeit.timeit("hs.haversine(hpt1, hpt2)", number=loops, globals=globals())}')
 
-    pt1 = TrackPoint(lat=1.0, lon=2.0)
-    pt2 = TrackPoint(lat=1.0, lon=3.0)
-    d = pt1.distance(pt2)
+    pt1: TrackPoint = TrackPoint(lat=1.0, lon=2.0)
+    pt2: TrackPoint = TrackPoint(lat=1.0, lon=3.0)
+    d: float = pt1.distance(pt2)
     print(f'    ptr1.distance(pt2)={d}')
     #print(f'perf={timeit.timeit("pt1.distance(pt2)", number=loops, globals=globals())}')
 
