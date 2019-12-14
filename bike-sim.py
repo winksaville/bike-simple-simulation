@@ -3,8 +3,11 @@
 # bike power calculation
 import math
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import xml.etree.ElementTree as et
+
+import track_point as tp
+import gpx as gpx
 
 # Some constants
 bike = 8.62 # kg 19 lbs
@@ -67,43 +70,56 @@ def mph(mps):
     mpsToMph = 3600.0 / (0.0254 * 12.0 * 5280.0)
     return mps * mpsToMph
 
-# the actual program:
-v=0.0       # initial velocity
-dt = 0.1    # time step
-va=[0]      # velocity array
-ta=[0]      # time array
-da=[0]      # distance array
-pv = 0.0    # previous velocity
-d=0.0       # initial distance
+if __name__ == '__main__':
+    import argparse
 
-#for d in np.arange(0, 100, 0.1):
-#  print(f'd={d:.2f} slope={slopeRadians(d):.02f}')
+    parser = argparse.ArgumentParser(description="Display gpx trkpt's.")
+    parser.add_argument('filename', type=str, help='gpx file to process')
+    args = parser.parse_args()
+    print(f'filename={args.filename}')
 
-# loop over time:
-for t in np.arange(0,150,dt):
-    grade = slopeRadians(d)
-    totalForce = fDrag(v) + fRolling(grade, mass, v) + fGravity(grade, mass)
-    powerNeeded = totalForce * v / eta
-    netPower = power - powerNeeded
+    path = gpx.Path(args.filename)
+    print(f'total_distance={path.total_distance()}')
 
-    av = (v + pv) / 2.0 # average velocity
-    sd = av * dt # step distance
-    d += sd # distance traveled
+    # the actual program:
+    v=0.0       # initial velocity
+    dt = 0.1    # time step
+    va=[0]      # velocity array
+    ta=[0]      # time array
+    da=[0]      # distance array
+    pv = 0.0    # previous velocity
+    d=0.0       # initial distance
 
-    # kinetic energy increases by net energy available for dt
-    #print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
-    pv = v
-    v = math.sqrt(v*v + 2 * netPower * dt * eta / mass)
-    va.append(mph(v))
-    ta.append(t+dt)
-    da.append(d)
+    #for d in np.arange(0, 100, 0.1):
+    #  print(f'd={d:.2f} slope={slopeRadians(d):.02f}')
 
-print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
 
-#plt.figure()
-#plt.plot(da, va)
-#plt.xlabel('distance (m)')
-##plt.plot(ta, va)
-##plt.xlabel('time (s)')
-#plt.ylabel('velocity (mph)')
-#plt.show()
+    # loop over time:
+    for t in np.arange(0,150,dt):
+        grade = slopeRadians(d)
+        totalForce = fDrag(v) + fRolling(grade, mass, v) + fGravity(grade, mass)
+        powerNeeded = totalForce * v / eta
+        netPower = power - powerNeeded
+
+        av = (v + pv) / 2.0 # average velocity
+        sd = av * dt # step distance
+        d += sd # distance traveled
+
+        # kinetic energy increases by net energy available for dt
+        #print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
+        pv = v
+        v = math.sqrt(v*v + 2 * netPower * dt * eta / mass)
+        va.append(mph(v))
+        ta.append(t+dt)
+        da.append(d)
+
+    print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
+
+    #plt.figure()
+    #plt.plot(da, va)
+    #plt.xlabel('distance (m)')
+    ##plt.plot(ta, va)
+    ##plt.xlabel('time (s)')
+    #plt.ylabel('velocity (mph)')
+    #plt.show()
+
