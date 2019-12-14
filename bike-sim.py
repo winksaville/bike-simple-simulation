@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
     # loop over time:
     for t in np.arange(0,150,dt):
-        grade = slopeRadians(d)
+        grade = path.slopeRadians(d)
         totalForce = fDrag(v) + fRolling(grade, mass, v) + fGravity(grade, mass)
         powerNeeded = totalForce * v / eta
         netPower = power - powerNeeded
@@ -107,8 +107,10 @@ if __name__ == '__main__':
 
         # kinetic energy increases by net energy available for dt
         #print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
+
         pv = v
         v = math.sqrt(v*v + 2 * netPower * dt * eta / mass)
+        print(f't={t:.2f} d={d:.2f}m v={mph(v):.2f}mph grade={grade:.02f} sd={sd:.2f}m')
         va.append(mph(v))
         ta.append(t+dt)
         da.append(d)

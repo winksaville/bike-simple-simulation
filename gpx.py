@@ -68,42 +68,45 @@ class Path:
                 self.__track.append(p)
 
         # Build and index for each km
-        total_distance: float = 0.0
         km: float = 0
         if len(self.__track) > 1:
-            distance: float
             prev: tp.TrackPoint
             for i, pt in enumerate(self.__track):
                 if i == 0:
-                    distance = 0.0
+                    pt.total_distance = 0.0
+                    pt.distance = 0.0
+                    pt.slope = 0.0
+                    pt.bearing = 0.0
                 else:
-                    distance = prev.distance(pt)
-                total_distance += distance
-                if (total_distance / 1000.0) >= km:
-                    self.__km_index_distance.append(KmIndexDistance(i, total_distance))
+                    dist: float = prev.distanceMeters(pt)
+                    if dist< 0.0:
+                        print(f'WARNING distance < 0.0 ??', end='')
+                        print(f'  {filename} point[{i:>3}]: prev={prev} pt={pt} is {dist:<6.3f}')
+                    pt.total_distance = prev.total_distance + dist
+                    #print(f'{i} dist={dist} pt.total_distance={pt.total_distance}')
+                    prev.distance = dist
+                    prev.slope = prev.slopeRadians(pt)
+                    prev.bearing = prev.bearingRadians(pt)
+
+                # First point whose begining is >= km
+                kmx: float = pt.total_distance / 1000.0
+                if kmx >= km:
+                    if (kmx == km):
+                        self.__km_index_distance.append(KmIndexDistance(i, pt.total_distance))
+                    else:
+                        assert((i > 0) \
+                                and (prev.total_distance < (km * 1000)) \
+                                and (pt.total_distance > (km * 1000)))
+                        self.__km_index_distance.append(KmIndexDistance(i - 1, prev.total_distance))
                     km += 1.0
                 #print(f'{filename} point[{i:>3}]: {pt} is {distance:>6.3f} from prev, total is {total_distance:>11.3f}', end='')
-                #if distance < 0.0:
-                #    print(f'WARNING distance < 0.0 ??')
                 #print('')
-                if distance < 0.0:
-                    print(f'WARNING distance < 0.0 ??')
-                    print(f'  {filename} point[{i:>3}]: {pt} is {distance:>6.3f} from prev, total is {total_distance:>11.3f}', end='')
                 prev = pt
-        else:
-            total_distance = 0.0
-        self.__km_index_distance.append(KmIndexDistance(i, total_distance))
-        #print(f'total_distance={total_distance}')
 
-        #for i, pt in enumerate(self.__track):
-        #    print(f'pt[{i:>3}]={pt}', end='')
-        #    if i < len(self.__track) - 1:
-        #        first_point = self.__track[i]
-        #        second_point = self.__track[i+1]
-        #        percent = first_point.slopePercent(second_point)
-        #        degrees = math.degrees(first_point.slopeRadians(second_point))
-        #        print(f' slope: {percent:>+5.3f}% {degrees:>+5.3f}degs', end='')
-        #    print('')
+        last_index: int = len(self.__track) - 1
+        total_distance: float = self.__track[last_index].total_distance
+        self.__km_index_distance.append(KmIndexDistance(last_index, total_distance))
+        #print(f'total_distance={total_distance}')
 
         #kid: KmIndexDistance
         #for i, kid in enumerate(self.__km_index_distance):
@@ -112,6 +115,22 @@ class Path:
     def total_distance(self: Path) -> float:
         """Return the total distance of the route"""
         return self.__km_index_distance[len(self.__km_index_distance) - 1].distance
+
+    def firstPointIndex(self: Path, distance: float) -> int:
+        """Return the index into track of the point that includes the distance"""
+        i: int = int(distance / 1000)
+        #print(f'firstPointIndex: i={i}')
+        if i >= 0 and i < len(self.__km_index_distance):
+            kid: KmIndexDistance = self.__km_index_distance[i]
+            #print(f'firstPointIndex: kid.index={kid.index}')
+            pt: tp.TrackPoint
+            j: int
+            for j, pt in enumerate(self.__track[kid.index:], kid.index):
+                #print(f'firstPointIndex: j={j} pt={pt} pt.total_distance={pt.total_distance}')
+                if (pt.total_distance <= distance) and distance < (pt.total_distance + pt.distance):
+                    return j;
+        return -1
+
 
     def slopePercent(self: Path, distance: float) -> float:
         """Return the slope as percentage of the route at distance"""
@@ -135,13 +154,41 @@ class Path:
         else:
             return 0.0
 
+    def track(self: Path) -> List[tp.TrackPoint]:
+        return self.__track
+
+    def km_index_distance(self: Path) -> List[tp.KmIndexDistance]:
+        return self.__km_index_distance
+
 if __name__ == '__main__':
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Display gpx trkpt's.")
-    parser.add_argument('filename', type=str, help='gpx file to process')
-    args = parser.parse_args()
-    print(f'filename={args.filename}')
-
-    path = Path(args.filename)
+    path = Path('RAAM_TS00_route_snippet.gpx')
     print(f'total_distance={path.total_distance()}')
+
+    t: List[tp.TrackPoint] = path.track()
+    for i, pt in enumerate(t):
+        print(f'pt[{i:>3}]={pt}')
+
+    import unittest
+
+    class TestGpx(unittest.TestCase):
+
+        def test_CreatePath(self):
+            path = Path('RAAM_TS00_route_snippet.gpx')
+            self.assertTrue(len(path.track()) != 0)
+            self.assertTrue(len(path.km_index_distance()) > 1)
+
+        def test_FirstPointIndex(self):
+            path: Path = Path('RAAM_TS00_route_snippet.gpx')
+            i: int
+            i = path.firstPointIndex(-1) # before beginning
+            self.assertEqual(i, -1)
+            i = path.firstPointIndex(0)
+            self.assertEqual(i, 0)
+            i = path.firstPointIndex(1000)
+            self.assertEqual(i, 17)
+            i = path.firstPointIndex(1300)
+            self.assertEqual(i, 21)
+            i = path.firstPointIndex(1600) # past end
+            self.assertEqual(i, -1)
+
+    unittest.main()
