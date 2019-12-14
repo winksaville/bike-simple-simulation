@@ -45,7 +45,7 @@ class TrackPoint:
 
     def __str__(self: TrackPoint) -> str:
         lat, lon = self.signedDecDegs()
-        return f"{{'lat': {lat:.6f}, 'lon': {lon:.6f}, 'ele': {self.ele:.3f}}}"
+        return f"{{'lat': {lat:>+9.6f}, 'lon': {lon:>+9.6f}, 'ele': {self.ele:>9.3f}}}"
 
 
     def radians(self: TrackPoint) -> Tuple[float, float]:
