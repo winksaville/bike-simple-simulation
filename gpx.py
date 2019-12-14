@@ -93,7 +93,14 @@ class Path:
         print(f'total_distance={total_distance}')
 
         for i, pt in enumerate(self.__track):
-            print(f'pt[{i:>3}]={pt}')
+            print(f'pt[{i:>3}]={pt}', end='')
+            if i < len(self.__track) - 1:
+                first_point = self.__track[i]
+                second_point = self.__track[i+1]
+                percent = first_point.slopePercent(second_point)
+                degrees = math.degrees(first_point.slopeRadians(second_point))
+                print(f' slope: {percent:>+5.3f}% {degrees:>+5.3f}degs', end='')
+            print('')
 
         kid: KmIndexDistance
         for i, kid in enumerate(self.__km_index_distance):
@@ -103,9 +110,27 @@ class Path:
         """Return the total distance of the route"""
         return self.__km_index_distance[len(self.__km_index_distance) - 1].distance
 
-    def slope(self: Path, distance: float) -> float:
-        """Return the slope of the route at distance"""
-        return 0.0
+    def slopePercent(self: Path, distance: float) -> float:
+        """Return the slope as percentage of the route at distance"""
+
+        i: int = int(distance / 1000)
+        if i >= 0 and i < len(self.__km_index_distance):
+            first_point = self.__track[self.__km_index_distance[i].index]
+            second_point = self.__track[self.__km_index_distance[i + 1].index]
+            return first_point.slopePercent(second_point)
+        else:
+            return 0.0
+
+    def slopeRadians(self: Path, distance: float) -> float:
+        """Return the slope as percentage of the route at distance"""
+
+        i: int = int(distance / 1000)
+        if i >= 0 and i < len(self.__km_index_distance):
+            first_point = self.__track[self.__km_index_distance[i].index]
+            second_point = self.__track[self.__km_index_distance[i + 1].index]
+            return first_point.slopeRadians(second_point)
+        else:
+            return 0.0
 
 if __name__ == '__main__':
     import argparse
