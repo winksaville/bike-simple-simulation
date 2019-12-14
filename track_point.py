@@ -43,6 +43,11 @@ class TrackPoint:
         else:
             raise ValueError("dis is None but brg is not")
 
+        self.total_distance: float = 0.0 # total distance in meters to this point
+        self.distance: float = 0.0 # distance in meters to next point
+        self.slope: float = 0.0 # slope in radians to next point
+        self.bearing: float = 0.0 # bearing in radians to next point
+
     def __str__(self: TrackPoint) -> str:
         lat, lon = self.signedDecDegs()
         return f"{{'lat': {lat:>+9.6f}, 'lon': {lon:>+9.6f}, 'ele': {self.ele:>9.3f}}}"
@@ -56,7 +61,7 @@ class TrackPoint:
         """Return lat, lon as radians"""
         return math.degrees(self.lat), math.degrees(self.lon)
 
-    def distance(self: TrackPoint, other: TrackPoint, radius: float=earthR1) -> float:
+    def distanceMeters(self: TrackPoint, other: TrackPoint, radius: float=earthR1) -> float:
         """Return distance between other and self in meters"""
         dLat_haversine = math.sin((other.lat - self.lat) / 2.0)
         dLon_haversine = math.sin((other.lon - self.lon) / 2.0)
@@ -64,32 +69,32 @@ class TrackPoint:
         c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0-a))
         return radius * c
 
-    def bearing(self: TrackPoint, other: TrackPoint) -> float:
+    def bearingRadians(self: TrackPoint, other: TrackPoint) -> float:
         """Return bearing in degrees North = 0.0, East = 90.0, South = 180, West = -90"""
         y = math.sin(other.lon - self.lon) * math.cos(other.lat)
         x = (math.cos(self.lat) * math.sin(other.lat)) - \
                 (math.sin(self.lat) * math.cos(other.lat) * math.cos(other.lat - self.lat))
-        return math.degrees(math.atan2(y, x))
+        return math.atan2(y, x)
 
-    def bearing360(self: TrackPoint, other: TrackPoint) -> float:
+    def bearingDegrees(self: TrackPoint, other: TrackPoint) -> float:
         """Return bearing in degrees 0..360"""
-        b = self.bearing(other)
+        b = self.bearingRadians(other)
         if (b < 0):
-            return 360 + b
+            return 360 + math.degrees(b)
         else:
-            return b
+            return math.degrees(b)
 
-    def eleDiff(self: TrackPoint, other: TrackPoint) -> float:
+    def elevationDiffMeters(self: TrackPoint, other: TrackPoint) -> float:
         """Eleveation difference between returns other.diff - self.diff"""
         return other.ele - self.ele
 
     def slopePercent(self: TrackPoint, other: TrackPoint) -> float:
         """Slope as a precentage positive for uphill and negative for downhill"""
-        return (self.eleDiff(other) / self.distance(other)) * 100.0
+        return (self.elevationDiffMeters(other) / self.distanceMeters(other)) * 100.0
 
     def slopeRadians(self: TrackPoint, other: TrackPoint) -> float:
         """Slope in radians, positive for uphill and negative for downhill"""
-        return math.atan2(self.eleDiff(other), self.distance(other))
+        return math.atan2(self.elevationDiffMeters(other), self.distanceMeters(other))
 
 if __name__ == '__main__':
     # Compare haversine with TrackPoint.distance
@@ -115,9 +120,9 @@ if __name__ == '__main__':
 
     pt1: TrackPoint = TrackPoint(lat=1.0, lon=2.0)
     pt2: TrackPoint = TrackPoint(lat=1.0, lon=3.0)
-    d: float = pt1.distance(pt2)
-    print(f'    ptr1.distance(pt2)={d}')
-    #print(f'perf={timeit.timeit("pt1.distance(pt2)", number=loops, globals=globals())}')
+    d: float = pt1.distanceMeters(pt2)
+    print(f'    ptr1.distanceMeters(pt2)={d}')
+    #print(f'perf={timeit.timeit("pt1.distanceMeters(pt2)", number=loops, globals=globals())}')
 
     import unittest
 
@@ -143,7 +148,7 @@ if __name__ == '__main__':
 
         def test_str(self):
             pt = TrackPoint(lon=1.0, lat=2.0, ele=3.0)
-            self.assertEqual(f'{pt}', '{\'lat\': 2.0, \'lon\': 1.0, \'ele\': 3.0}')
+            self.assertEqual(f'{pt}', '{\'lat\': +2.000000, \'lon\': +1.000000, \'ele\':     3.000}')
 
         def test_radians(self):
             pt = TrackPoint(lat=1.0, lon=2.0)
@@ -160,132 +165,130 @@ if __name__ == '__main__':
         def test_distance_0(self):
             pt1 = TrackPoint()
             pt2 = TrackPoint()
-            d = pt1.distance(pt2)
+            d = pt1.distanceMeters(pt2)
             self.assertEqual(d, 0.0)
 
         def test_distance_non_0(self):
             pt1 = TrackPoint(lat=1.0, lon=2.0)
             pt2 = TrackPoint(lat=1.0, lon=3.0)
-            d = pt1.distance(pt2)
+            d = pt1.distanceMeters(pt2)
             self.assertEqual(round(d, 3), 111178.144)
 
         def test_bearing_0(self):
             pt1 = TrackPoint(lat=0.0, lon=90.0)
             pt2 = TrackPoint(lat=1.0, lon=90.0)
-            b = pt1.bearing(pt2)
+            b = pt1.bearingDegrees(pt2)
             self.assertEqual(round(b, 3), 0.000)
 
         def test_bearing_90(self):
             pt1 = TrackPoint(lat=0.0, lon=90.0)
             pt2 = TrackPoint(lat=0.0, lon=91.0)
-            b = pt1.bearing(pt2)
+            b = pt1.bearingDegrees(pt2)
             self.assertEqual(round(b, 3), 90.000)
 
         def test_bearing_180(self):
             pt1 = TrackPoint(lat=1.0, lon=90.0)
             pt2 = TrackPoint(lat=0.0, lon=90.0)
-            b = pt1.bearing(pt2)
+            b = pt1.bearingDegrees(pt2)
             self.assertEqual(round(b, 3), 180.000)
 
         def test_bearing_270(self):
             pt1 = TrackPoint(lat=0.0, lon=90.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0)
-            b = pt1.bearing(pt2)
-            self.assertEqual(round(b, 3), -90.000)
-            b = pt1.bearing360(pt2)
+            b = pt1.bearingDegrees(pt2)
             self.assertEqual(round(b, 3), 270.000)
 
-        def test_eleDiff_default_0(self):
+        def test_elevationDiffMeters_default_0(self):
             pt1 = TrackPoint(lat=0.0, lon=90.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0)
-            d = pt1.eleDiff(pt2)
+            d = pt1.elevationDiffMeters(pt2)
             self.assertEqual(0.0, d)
 
-        def test_eleDiff_1(self):
+        def test_elevationDiffMeters_1(self):
             pt1 = TrackPoint(lat=0.0, lon=90.0, ele=99.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0, ele=100.0)
-            d = pt1.eleDiff(pt2)
-            #print(f'eleDiff_1: {d}')
+            d = pt1.elevationDiffMeters(pt2)
+            #print(f'elevationDiffMeters_1: {d}')
             self.assertEqual(1.0, d)
 
-        def test_eleDiff_neg_1(self):
+        def test_elevationDiffMeters_neg_1(self):
             pt1 = TrackPoint(lat=0.0, lon=90.0, ele=100.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0, ele=99.0)
-            d = pt1.eleDiff(pt2)
-            #print(f'eleDiff_neg_1: {d}')
+            d = pt1.elevationDiffMeters(pt2)
+            #print(f'elevationDiffMeters_neg_1: {d}')
             self.assertEqual(-1.0, d)
 
         def test_lat_lon_1deg_0_to_90(self):
              #print("")
              pt1 = TrackPoint(lat=89.0, lon=0.0, ele=3.0)
              pt2 = TrackPoint(lat=90.0, lon=0.0, ele=3.0)
-             a = pt1.distance(pt2)
+             a = pt1.distanceMeters(pt2)
              #print(f'a is {a}')
              self.assertEqual(round(a, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=81.0, lon=2.0, ele=3.0)
              pt2 = TrackPoint(lat=80.0, lon=2.0, ele=3.0)
-             b = pt1.distance(pt2)
+             b = pt1.distanceMeters(pt2)
              #print(f'b is {b}')
              self.assertEqual(round(b, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=71.0, lon=2.0, ele=3.0)
              pt2 = TrackPoint(lat=70.0, lon=2.0, ele=3.0)
-             c = pt1.distance(pt2)
+             c = pt1.distanceMeters(pt2)
              #print(f'c is {c}')
              self.assertEqual(round(c, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=61.0, lon=2.0, ele=3.0)
              pt2 = TrackPoint(lat=60.0, lon=2.0, ele=3.0)
-             d = pt1.distance(pt2)
+             d = pt1.distanceMeters(pt2)
              #print(f'd is {d}')
              self.assertEqual(round(d, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=51.0, lon=2.0, ele=3.0)
              pt2 = TrackPoint(lat=50.0, lon=2.0, ele=3.0)
-             e = pt1.distance(pt2)
+             e = pt1.distanceMeters(pt2)
              #print(f'e is {e}')
              self.assertEqual(round(e, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=46.0, lon=2.0, ele=3.0)
              pt2 = TrackPoint(lat=45.0, lon=2.0, ele=3.0)
-             f = pt1.distance(pt2)
+             f = pt1.distanceMeters(pt2)
              #print(f'f is {f}')
              self.assertEqual(round(f, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=41.0, lon=2.0, ele=3.0)
              pt2 = TrackPoint(lat=40.0, lon=2.0, ele=3.0)
-             s = pt1.distance(pt2)
+             s = pt1.distanceMeters(pt2)
              #print(f's is {s}')
              self.assertEqual(round(s, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=31.0, lon=2.0, ele=3.0)
              pt2 = TrackPoint(lat=30.0, lon=2.0, ele=3.0)
-             u = pt1.distance(pt2)
+             u = pt1.distanceMeters(pt2)
              #print(f'u is {u}')
              self.assertEqual(round(u, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=21.0, lon=2.0, ele=3.0)
              pt2 = TrackPoint(lat=20.0, lon=2.0, ele=3.0)
-             v = pt1.distance(pt2)
+             v = pt1.distanceMeters(pt2)
              #print(f'v is {v}')
              self.assertEqual(round(v, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=11.0, lon=2.0, ele=3.0)
              pt2 = TrackPoint(lat=10.0, lon=2.0, ele=3.0)
-             w = pt1.distance(pt2)
+             w = pt1.distanceMeters(pt2)
              #print(f'w is {w}')
              self.assertEqual(round(w, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=1.0, lon=2.0, ele=3.0)
              pt2 = TrackPoint(lat=0.0, lon=2.0, ele=3.0)
-             x = pt1.distance(pt2)
+             x = pt1.distanceMeters(pt2)
              #print(f'x is {x}')
              self.assertEqual(round(x, 6), 111195.079734)
 
              pt1 = TrackPoint(lat=0.0, lon=-20.0, ele=3.0)
              pt2 = TrackPoint(lat=1.0, lon=-20.0, ele=3.0)
-             y = pt1.distance(pt2)
+             y = pt1.distanceMeters(pt2)
              #print(f'y is {y}')
              self.assertEqual(round(y, 6), 111195.079734)
 
@@ -307,8 +310,8 @@ if __name__ == '__main__':
         def test_bearing_distance_different_points(self):
              pt1 = TrackPoint(lat=10.0, lon=20.0, ele=3.0)
              pt2 = TrackPoint(lat=11.0, lon=20.0, ele=3.0)
-             distance = pt1.distance(pt2)
-             bearing = pt1.bearing(pt2)
+             distance = pt1.distanceMeters(pt2)
+             bearing = pt1.bearingRadians(pt2)
              pt3 = TrackPoint(lat=10.0, lon=20.0, ele=3.0, brg=bearing, dis=distance)
              self.assertEqual(pt2.lat, pt3.lat)
              self.assertEqual(pt2.lon, pt3.lon)
