@@ -100,10 +100,10 @@ for t in np.arange(0,150,dt):
 
 print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
 
-plt.figure()
-plt.plot(da, va)
-plt.xlabel('distance (m)')
-#plt.plot(ta, va)
-#plt.xlabel('time (s)')
-plt.ylabel('velocity (mph)')
-plt.show()
+#plt.figure()
+#plt.plot(da, va)
+#plt.xlabel('distance (m)')
+##plt.plot(ta, va)
+##plt.xlabel('time (s)')
+#plt.ylabel('velocity (mph)')
+#plt.show()
