@@ -82,29 +82,32 @@ class Path:
                 if (total_distance / 1000.0) >= km:
                     self.__km_index_distance.append(KmIndexDistance(i, total_distance))
                     km += 1.0
-                print(f'{filename} point[{i:>3}]: {pt} is {distance:>6.3f} from prev, total is {total_distance:>11.3f}', end='')
+                #print(f'{filename} point[{i:>3}]: {pt} is {distance:>6.3f} from prev, total is {total_distance:>11.3f}', end='')
+                #if distance < 0.0:
+                #    print(f'WARNING distance < 0.0 ??')
+                #print('')
                 if distance < 0.0:
-                    print(f' WARNING distance < 0.0 ??')
-                print('')
+                    print(f'WARNING distance < 0.0 ??')
+                    print(f'  {filename} point[{i:>3}]: {pt} is {distance:>6.3f} from prev, total is {total_distance:>11.3f}', end='')
                 prev = pt
         else:
             total_distance = 0.0
         self.__km_index_distance.append(KmIndexDistance(i, total_distance))
-        print(f'total_distance={total_distance}')
+        #print(f'total_distance={total_distance}')
 
-        for i, pt in enumerate(self.__track):
-            print(f'pt[{i:>3}]={pt}', end='')
-            if i < len(self.__track) - 1:
-                first_point = self.__track[i]
-                second_point = self.__track[i+1]
-                percent = first_point.slopePercent(second_point)
-                degrees = math.degrees(first_point.slopeRadians(second_point))
-                print(f' slope: {percent:>+5.3f}% {degrees:>+5.3f}degs', end='')
-            print('')
+        #for i, pt in enumerate(self.__track):
+        #    print(f'pt[{i:>3}]={pt}', end='')
+        #    if i < len(self.__track) - 1:
+        #        first_point = self.__track[i]
+        #        second_point = self.__track[i+1]
+        #        percent = first_point.slopePercent(second_point)
+        #        degrees = math.degrees(first_point.slopeRadians(second_point))
+        #        print(f' slope: {percent:>+5.3f}% {degrees:>+5.3f}degs', end='')
+        #    print('')
 
-        kid: KmIndexDistance
-        for i, kid in enumerate(self.__km_index_distance):
-            print(f'km[{i}]: index={kid.index:>3} distance={kid.distance:>11.3f} pt: {self.__track[kid.index]}')
+        #kid: KmIndexDistance
+        #for i, kid in enumerate(self.__km_index_distance):
+        #    print(f'km[{i}]: index={kid.index:>3} distance={kid.distance:>11.3f} pt: {self.__track[kid.index]}')
 
     def total_distance(self: Path) -> float:
         """Return the total distance of the route"""
