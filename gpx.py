@@ -43,10 +43,10 @@ class KmIndexDistance:
     index: int
     distance: float
 
-class Route:
-    """Provide access ot a route"""
+class Path:
+    """Provide access to a path, a list of TrackPoints"""
 
-    def __init__(self: Route, filename: str) -> None:
+    def __init__(self: Path, filename: str) -> None:
         # List of TrackPoints in this route
         self.__track: List[tp.TrackPoint] = []
 
@@ -99,11 +99,11 @@ class Route:
         for i, kid in enumerate(self.__km_index_distance):
             print(f'km[{i}]: index={kid.index:>3} distance={kid.distance:>11.3f} pt: {self.__track[kid.index]}')
 
-    def total_distance(self: Route) -> float:
+    def total_distance(self: Path) -> float:
         """Return the total distance of the route"""
-        return self.__km_index_distance[len(self.__km_index_distance) - 1]
+        return self.__km_index_distance[len(self.__km_index_distance) - 1].distance
 
-    def slope(self: Route, distance: float) -> float:
+    def slope(self: Path, distance: float) -> float:
         """Return the slope of the route at distance"""
         return 0.0
 
@@ -115,5 +115,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(f'filename={args.filename}')
 
-    route = Route(args.filename)
-    print(f'total_distance={route.total_distance()}')
+    path = Path(args.filename)
+    print(f'total_distance={path.total_distance()}')
