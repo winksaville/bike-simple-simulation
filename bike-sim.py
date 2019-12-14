@@ -46,17 +46,17 @@ def fRolling(grade, mass, velocity):
 def fGravity(grade, mass):
     return g*math.sin(math.atan(grade))*mass
 
-def slope(dist):
+def slopeRadians(dist):
     """
-    Given the distance in meters find the slope (grade).
+    Given the distance in meters find the slope in radians.
 
-    We assume the grade is an undulating sine wave
+    We assume the "road" is an undulating sine wave
     with a constant frequency and amplitude. If amplitude
     is 0 there is no undulations.
     """
     # The cos(sin(x)) is the slope of a line tagent to the sin curve at x
     freq = 100.0 # 100 meters
-    amplitude = 0.0 / freq # 0.0 for level 1.0 for slight undulation
+    amplitude = 1.0 / freq # 0.0 for level 1.0 for slight undulation
     c = math.cos(2.0 * math.pi * (dist / freq)) * amplitude
     return c
 
@@ -77,11 +77,11 @@ pv = 0.0    # previous velocity
 d=0.0       # initial distance
 
 #for d in np.arange(0, 100, 0.1):
-#  print(f'd={d:.2f} slope={slope(d):.02f}')
+#  print(f'd={d:.2f} slope={slopeRadians(d):.02f}')
 
 # loop over time:
 for t in np.arange(0,150,dt):
-    grade = slope(d)
+    grade = slopeRadians(d)
     totalForce = fDrag(v) + fRolling(grade, mass, v) + fGravity(grade, mass)
     powerNeeded = totalForce * v / eta
     netPower = power - powerNeeded
@@ -100,10 +100,10 @@ for t in np.arange(0,150,dt):
 
 print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
 
-#plt.figure()
-#plt.plot(da, va)
-#plt.xlabel('distance (m)')
-##plt.plot(ta, va)
-##plt.xlabel('time (s)')
-#plt.ylabel('velocity (mph)')
-#plt.show()
+plt.figure()
+plt.plot(da, va)
+plt.xlabel('distance (m)')
+#plt.plot(ta, va)
+#plt.xlabel('time (s)')
+plt.ylabel('velocity (mph)')
+plt.show()
