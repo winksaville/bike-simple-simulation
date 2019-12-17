@@ -78,7 +78,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print(f'filename={args.filename}')
 
-    path = gpx.Path(args.filename)
+    path: gpx.Path = gpx.Path(args.filename)
     print(f'total_distance={path.total_distance()}')
 
     # the actual program:
@@ -94,8 +94,10 @@ if __name__ == '__main__':
     #  print(f'd={d:.2f} slope={slopeRadians(d):.02f}')
 
 
-    # loop over time:
-    for t in np.arange(0,150,dt):
+    # loop over time until end of distance:
+    t: float = 0.0
+    total_distance: float = path.total_distance()
+    while d < total_distance:
         grade = path.slopeRadians(d)
         totalForce = fDrag(v) + fRolling(grade, mass, v) + fGravity(grade, mass)
         powerNeeded = totalForce * v / eta
@@ -103,7 +105,13 @@ if __name__ == '__main__':
 
         av = (v + pv) / 2.0 # average velocity
         sd = av * dt # step distance
-        d += sd # distance traveled
+        if (d + sd) > total_distance:
+            # Don't go past the last point
+            sd = total_distance - d # Adjust the last stpe
+            dt = sd / av # Adjust the dt
+            d = total_distance # We're done
+        else:
+            d += sd # distance traveled
 
         # kinetic energy increases by net energy available for dt
         #print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
@@ -114,6 +122,9 @@ if __name__ == '__main__':
         va.append(mph(v))
         ta.append(t+dt)
         da.append(d)
+
+        # incrment time
+        t += dt
 
     print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
 
