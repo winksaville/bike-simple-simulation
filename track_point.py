@@ -43,6 +43,7 @@ class TrackPoint:
         else:
             raise ValueError("dis is None but brg is not")
 
+        self.index: int = 0 # Index of this point
         self.total_distance: float = 0.0 # total distance in meters to this point
         self.distance: float = 0.0 # distance in meters to next point
         self.slope: float = 0.0 # slope in radians to next point

@@ -72,6 +72,7 @@ class Path:
         if len(self.__track) > 1:
             prev: tp.TrackPoint
             for i, pt in enumerate(self.__track):
+                pt.index = i
                 if i == 0:
                     pt.total_distance = 0.0
                     pt.distance = 0.0
@@ -116,48 +117,37 @@ class Path:
         """Return the total distance of the route"""
         return self.__km_index_distance[len(self.__km_index_distance) - 1].distance
 
-    def firstPointIndex(self: Path, distance: float) -> int:
+    def getTrackPoint(self: Path, distance: float) -> Optional[tp.TrackPoint]:
         """Return the index into track of the point that includes the distance"""
         i: int = int(distance / 1000)
-        #print(f'firstPointIndex: i={i}')
         if i >= 0 and i < len(self.__km_index_distance):
             kid: KmIndexDistance = self.__km_index_distance[i]
-            #print(f'firstPointIndex: kid.index={kid.index}')
             pt: tp.TrackPoint
             j: int
             for j, pt in enumerate(self.__track[kid.index:], kid.index):
-                #print(f'firstPointIndex: j={j} pt={pt} pt.total_distance={pt.total_distance}')
-                if (pt.total_distance <= distance) and distance < (pt.total_distance + pt.distance):
-                    return j;
-        return -1
+                # Two adjacent points could be the same point so we use <= for both cases
+                if (pt.total_distance <= distance) and (distance <= (pt.total_distance + pt.distance)):
+                    return pt;
+        return None
 
-
-    def slopePercent(self: Path, distance: float) -> float:
-        """Return the slope as percentage of the route at distance"""
-
-        i: int = int(distance / 1000)
-        if i >= 0 and i < len(self.__km_index_distance):
-            first_point = self.__track[self.__km_index_distance[i].index]
-            second_point = self.__track[self.__km_index_distance[i + 1].index]
-            return first_point.slopePercent(second_point)
-        else:
-            return 0.0
 
     def slopeRadians(self: Path, distance: float) -> float:
-        """Return the slope as percentage of the route at distance"""
+        """
+        Return the slope in radians of the route at distance
 
-        i: int = int(distance / 1000)
-        if i >= 0 and i < len(self.__km_index_distance):
-            first_point = self.__track[self.__km_index_distance[i].index]
-            second_point = self.__track[self.__km_index_distance[i + 1].index]
-            return first_point.slopeRadians(second_point)
+        Some day maybe use three points and interpolate slope??
+        """
+
+        pt: Optional[tp.TrackPoint] = self.getTrackPoint(distance)
+        if pt is not None:
+            return pt.slope
         else:
-            return 0.0
+            return 0
 
     def track(self: Path) -> List[tp.TrackPoint]:
         return self.__track
 
-    def km_index_distance(self: Path) -> List[tp.KmIndexDistance]:
+    def km_index_distance(self: Path) -> List[KmIndexDistance]:
         return self.__km_index_distance
 
 if __name__ == '__main__':
@@ -177,18 +167,45 @@ if __name__ == '__main__':
             self.assertTrue(len(path.track()) != 0)
             self.assertTrue(len(path.km_index_distance()) > 1)
 
-        def test_FirstPointIndex(self):
+        def test_getTrackPoint(self):
             path: Path = Path('RAAM_TS00_route_snippet.gpx')
-            i: int
-            i = path.firstPointIndex(-1) # before beginning
-            self.assertEqual(i, -1)
-            i = path.firstPointIndex(0)
-            self.assertEqual(i, 0)
-            i = path.firstPointIndex(1000)
-            self.assertEqual(i, 17)
-            i = path.firstPointIndex(1300)
-            self.assertEqual(i, 21)
-            i = path.firstPointIndex(1600) # past end
-            self.assertEqual(i, -1)
+            dist: float
+
+            dist = -1
+            pt: tp.TrackPoint
+            pt = path.getTrackPoint(dist) # before beginning
+            self.assertTrue(pt is None)
+
+            dist = 0
+            pt = path.getTrackPoint(dist)
+            self.assertTrue(pt is not None)
+            self.assertEqual(pt.index, 0)
+            self.assertEqual(pt.total_distance, dist)
+            self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+
+            dist = 1000
+            pt = path.getTrackPoint(dist)
+            self.assertTrue(pt is not None)
+            self.assertEqual(pt.index, 17)
+            self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+
+            dist = 1300
+            pt = path.getTrackPoint(dist)
+            self.assertTrue(pt is not None)
+            self.assertEqual(pt.index, 21)
+            self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+
+            # We get the penultimate point when asking for the point which contains the length ?
+            # I'm not sure this is the "correct" answer but the last point has a distance, bearing
+            # and slope of zero, so returning the penultimate point is not unreasonable.
+            dist = path.total_distance()
+            pt = path.getTrackPoint(dist)
+            self.assertTrue(pt is not None)
+            self.assertEqual(pt.index, len(path.track()) - 2)
+            self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+
+            dist = path.total_distance() + 1.0
+            pt = path.getTrackPoint(dist)
+            self.assertTrue(pt is None)
 
     unittest.main()
