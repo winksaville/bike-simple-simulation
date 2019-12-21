@@ -75,8 +75,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Display gpx trkpt's.")
     parser.add_argument('filename', type=str, help='gpx file to process')
+    parser.add_argument('power', type=float, help='power', default=power)
     args = parser.parse_args()
     print(f'filename={args.filename}')
+    print(f'filename={args.power}')
+
+    power = args.power
 
     path: gpx.Path = gpx.Path(args.filename)
     print(f'total_distance={path.total_distance()}')
@@ -126,7 +130,10 @@ if __name__ == '__main__':
         # incrment time
         t += dt
 
-    print(f't={t:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
+    hours: int = math.trunc(t / 3600.0)
+    minutes: int = math.trunc((t  - (hours * 3600.0)) / 60)
+    seconds: float = t - (hours * 3600) - (minutes * 60)
+    print(f't={t:.2f} {hours}:{minutes}:{seconds:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
 
     #plt.figure()
     #plt.plot(da, va)
