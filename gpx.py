@@ -151,7 +151,9 @@ class Path:
         return self.__km_index_distance
 
 if __name__ == '__main__':
-    path = Path('RAAM_TS00_route_snippet.gpx')
+    test_data = './test/data/RAAM_TS00_route_snippet.gpx'
+
+    path = Path(test_data)
     print(f'total_distance={path.total_distance()}')
 
     t: List[tp.TrackPoint] = path.track()
@@ -163,12 +165,12 @@ if __name__ == '__main__':
     class TestGpx(unittest.TestCase):
 
         def test_CreatePath(self):
-            path = Path('RAAM_TS00_route_snippet.gpx')
+            path = Path(test_data)
             self.assertTrue(len(path.track()) != 0)
             self.assertTrue(len(path.km_index_distance()) > 1)
 
         def test_getTrackPoint(self):
-            path: Path = Path('RAAM_TS00_route_snippet.gpx')
+            path: Path = Path(test_data)
             dist: float
 
             dist = -1
