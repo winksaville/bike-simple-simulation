@@ -4,13 +4,13 @@
 from __future__ import annotations
 from typing import Optional, List
 from dataclasses import dataclass
+from time import struct_time, strptime
 
 import math
 import numpy as np
 import xml.etree.ElementTree as et
-import track_point as tp
 
-def parse_simple_float_subElement(elem_float: et.Element, name: str) -> float:
+def parse_float_subElement(elem_float: et.Element, name: str) -> float:
     elem = elem_float.find('.//{*}' + name)
     val: str
     if elem is not None and elem.text:
@@ -31,12 +31,12 @@ def parse_trackpoint(elem: et.Element) -> Optional[tp.TrackPoint]:
     ele: float = 0.0
 
     #lat = parse_simple_float_subElement(elem, 'Position//{*}LatitudeDegrees')
-    lat = parse_simple_float_subElement(elem, 'LatitudeDegrees')
-    lon = parse_simple_float_subElement(elem, 'LongitudeDegrees')
-    ele = parse_simple_float_subElement(elem, 'AltitudeMeters')
-    hrt = parse_simple_float_subElement(elem, 'HeartRateBpm//{*}Value')
-    spd = parse_simple_float_subElement(elem, 'Speed')
-    wts = parse_simple_float_subElement(elem, 'Watts')
+    lat = parse_float_subElement(elem, 'LatitudeDegrees')
+    lon = parse_float_subElement(elem, 'LongitudeDegrees')
+    ele = parse_float_subElement(elem, 'AltitudeMeters')
+    hrt = parse_float_subElement(elem, 'HeartRateBpm//{*}Value')
+    spd = parse_float_subElement(elem, 'Speed')
+    wts = parse_float_subElement(elem, 'Watts')
 
     return tp.TrackPoint(lat=lat, lon=lon, ele=ele, hrt=hrt, spd=spd, wts=wts)
 
