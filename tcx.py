@@ -9,6 +9,17 @@ from time import struct_time, strptime
 import math
 import numpy as np
 import xml.etree.ElementTree as et
+import track_point as tp
+
+def parse_time_subElement(elem_time: et.Element, name: str) -> Optional[struct_time]:
+    elem = elem_time.find('.//{*}' + name)
+    val_time: Optional[struct_time]
+    if elem is not None and elem.text:
+        val_str: str = elem.text.strip()
+        val_time = strptime(val_str, "%Y-%m-%dT%H:%M:%SZ")
+    else:
+        val_time = None
+    return val_time
 
 def parse_float_subElement(elem_float: et.Element, name: str) -> float:
     elem = elem_float.find('.//{*}' + name)
@@ -26,19 +37,15 @@ def parse_trackpoint(elem: et.Element) -> Optional[tp.TrackPoint]:
     if not elem:
         return None
 
-    lat: float = 0.0
-    lon: float = 0.0
-    ele: float = 0.0
+    tim: Optional[struct_time] = parse_time_subElement(elem, 'Time')
+    lat: float = parse_float_subElement(elem, 'LatitudeDegrees')
+    lon: float = parse_float_subElement(elem, 'LongitudeDegrees')
+    ele: float = parse_float_subElement(elem, 'AltitudeMeters')
+    hrt: float = parse_float_subElement(elem, 'HeartRateBpm//{*}Value')
+    spd: float = parse_float_subElement(elem, 'Speed')
+    wts: float = parse_float_subElement(elem, 'Watts')
 
-    #lat = parse_simple_float_subElement(elem, 'Position//{*}LatitudeDegrees')
-    lat = parse_float_subElement(elem, 'LatitudeDegrees')
-    lon = parse_float_subElement(elem, 'LongitudeDegrees')
-    ele = parse_float_subElement(elem, 'AltitudeMeters')
-    hrt = parse_float_subElement(elem, 'HeartRateBpm//{*}Value')
-    spd = parse_float_subElement(elem, 'Speed')
-    wts = parse_float_subElement(elem, 'Watts')
-
-    return tp.TrackPoint(lat=lat, lon=lon, ele=ele, hrt=hrt, spd=spd, wts=wts)
+    return tp.TrackPoint(lat=lat, lon=lon, ele=ele, hrt=hrt, spd=spd, wts=wts, tim=tim)
 
 @dataclass
 class KmIndexDistance:

@@ -2,17 +2,18 @@
 # Distance and bearing algorithms from https://www.movable-type.co.uk/scripts/latlong.html
 
 from __future__ import annotations
+from enum import Enum
+from typing import Tuple, Optional
+from time import struct_time
 
 import math
 import numpy as np
-from enum import Enum
-from typing import Tuple
 
 earthR1 = 6_371_008.7714
 
 class TrackPoint:
 
-    def __init__(self: TrackPoint, lat: float=0.0, lon: float=0.0, ele: float=0.0, brg: float=None, dis: float=None, spd: float=0.0, hrt: float=0.0, wts: float=0.0, radius: float=earthR1) -> None:
+    def __init__(self: TrackPoint, lat: float=0.0, lon: float=0.0, ele: float=0.0, brg: float=None, dis: float=None, spd: float=0.0, hrt: float=0.0, wts: float=0.0, tim: Optional[struct_time] = None, radius: float=earthR1) -> None:
         """
         Create a new TrackPoint using either lat, lon and ele to define the point
         or if brg and dis are supplied then create a new TrackPoint which is located
@@ -51,11 +52,12 @@ class TrackPoint:
         self.speed: float = spd # speed in meters/sec at this point
         self.hr: float = hrt # heart rate in beats/min at this point
         self.watts: float = wts # Watts at this point
+        self.time: Optional[struct_time] = tim # Time at this point
 
 
     def __str__(self: TrackPoint) -> str:
         lat, lon = self.signedDecDegs()
-        return f"{{'lat': {lat:>+9.6f}, 'lon': {lon:>+9.6f}, 'ele': {self.ele:>9.3f}, 'tot': {self.total_distance:>9.3f}, 'dis': {self.distance:>6.3f}, 'slp': {self.slope:>6.3f},  'brg': {self.bearing:>6.3f}, 'spd': {self.speed:>6.3f}, 'hrt': {self.hr:>4.1f}, 'wts': {self.watts:>6.2f}"
+        return f"{{'lat': {lat:>+9.6f}, 'lon': {lon:>+9.6f}, 'ele': {self.ele:>9.3f}, 'tot': {self.total_distance:>9.3f}, 'dis': {self.distance:>6.3f}, 'slp': {self.slope:>6.3f},  'brg': {self.bearing:>6.3f}, 'spd': {self.speed:>6.3f}, 'hrt': {self.hr:>4.1f}, 'wts': {self.watts:>6.2f}, 'tim': {self.time}}}"
 
 
     def radians(self: TrackPoint) -> Tuple[float, float]:
@@ -153,8 +155,7 @@ if __name__ == '__main__':
 
         def test_str(self):
             pt = TrackPoint(lon=1.0, lat=2.0, ele=3.0)
-            self.assertEqual(f'{pt}', '{\'lat\': +2.000000, \'lon\': +1.000000, \'ele\':     3.000}')
-
+            self.assertEqual(f'{pt}', '{\'lat\': +2.000000, \'lon\': +1.000000, \'ele\':     3.000, \'tot\':     0.000, \'dis\':  0.000, \'slp\':  0.000,  \'brg\':  0.000, \'spd\':  0.000, \'hrt\':  0.0, \'wts\':   0.00, \'tim\': None}')
         def test_radians(self):
             pt = TrackPoint(lat=1.0, lon=2.0)
             lat, lon = pt.radians()
