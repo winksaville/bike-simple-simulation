@@ -12,7 +12,7 @@ earthR1 = 6_371_008.7714
 
 class TrackPoint:
 
-    def __init__(self: TrackPoint, lat: float=0.0, lon: float=0.0, ele: float=0.0, brg: float=None, dis: float=None, radius: float=earthR1) -> None:
+    def __init__(self: TrackPoint, lat: float=0.0, lon: float=0.0, ele: float=0.0, brg: float=None, dis: float=None, spd: float=0.0, hrt: float=0.0, wts: float=0.0, radius: float=earthR1) -> None:
         """
         Create a new TrackPoint using either lat, lon and ele to define the point
         or if brg and dis are supplied then create a new TrackPoint which is located
@@ -48,10 +48,14 @@ class TrackPoint:
         self.distance: float = 0.0 # distance in meters to next point
         self.slope: float = 0.0 # slope in radians to next point
         self.bearing: float = 0.0 # bearing in radians to next point
+        self.speed: float = spd # speed in meters/sec at this point
+        self.hr: float = hrt # heart rate in beats/min at this point
+        self.watts: float = wts # Watts at this point
+
 
     def __str__(self: TrackPoint) -> str:
         lat, lon = self.signedDecDegs()
-        return f"{{'lat': {lat:>+9.6f}, 'lon': {lon:>+9.6f}, 'ele': {self.ele:>9.3f} 'tot': {self.total_distance:>9.3f} 'dis': {self.distance:>6.3f} 'slp': {self.slope:>6.3f} 'brg': {self.bearing:>6.3f}"
+        return f"{{'lat': {lat:>+9.6f}, 'lon': {lon:>+9.6f}, 'ele': {self.ele:>9.3f}, 'tot': {self.total_distance:>9.3f}, 'dis': {self.distance:>6.3f}, 'slp': {self.slope:>6.3f},  'brg': {self.bearing:>6.3f}, 'spd': {self.speed:>6.3f}, 'hrt': {self.hr:>4.1f}, 'wts': {self.watts:>6.2f}"
 
 
     def radians(self: TrackPoint) -> Tuple[float, float]:
