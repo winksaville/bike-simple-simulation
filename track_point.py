@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 # Distance and bearing algorithms from https://www.movable-type.co.uk/scripts/latlong.html
 
 from __future__ import annotations
