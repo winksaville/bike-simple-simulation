@@ -3,11 +3,13 @@
 # bike power calculation
 import math
 import numpy as np
-#import matplotlib.pyplot as plt
 import xml.etree.ElementTree as et
 
+import os
 import track_point as tp
-import gpx as gpx
+import path as p
+import gpx_track_list as gpx_tl
+import tcx_track_list as tcx_tl
 
 # Some constants
 bike = 8.62 # kg 19 lbs
@@ -73,17 +75,26 @@ def mph(mps):
 if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(description="Display gpx trkpt's.")
-    parser.add_argument('filename', type=str, help='gpx file to process')
+    parser = argparse.ArgumentParser(description="Process Path.")
+    parser.add_argument('filename', type=str, help='file to process')
     parser.add_argument('power', type=float, help='power', default=power)
     args = parser.parse_args()
     print(f'filename={args.filename}')
-    print(f'filename={args.power}')
+    print(f'power={args.power}')
 
     power = args.power
 
-    path: gpx.Path = gpx.Path(args.filename)
-    print(f'total_distance={path.total_distance()}')
+    _, extension = os.path.splitext(args.filename)
+    if extension == '.gpx':
+        trklist: p.Path = p.Path(gpx_tl.GpxTrackList(args.filename))
+    elif extension == '.tcx':
+        trklist: p.Path = p.Path(tcx_tl.TcxTrackList(args.filename))
+    else:
+        print(f"Unknown file extension:'{extension}' for filename:{args.filename}")
+        exit(1)
+
+
+    print(f'total_distance={trklist.total_distance()}')
 
     # the actual program:
     v=0.0       # initial velocity
@@ -100,9 +111,9 @@ if __name__ == '__main__':
 
     # loop over time until end of distance:
     t: float = 0.0
-    total_distance: float = path.total_distance()
+    total_distance: float = trklist.total_distance()
     while d < total_distance:
-        grade = path.slopeRadians(d)
+        grade = trklist.slopeRadians(d)
         totalForce = fDrag(v) + fRolling(grade, mass, v) + fGravity(grade, mass)
         powerNeeded = totalForce * v / eta
         netPower = power - powerNeeded
@@ -135,6 +146,7 @@ if __name__ == '__main__':
     seconds: float = t - (hours * 3600) - (minutes * 60)
     print(f't={t:.2f} {hours}:{minutes}:{seconds:.2f} v={mph(v):.2f}mph drag={fDrag(v):.2f}N grade={grade:.02f} F roll={fRolling(grade, mass, v):.2f}N F gravity={fGravity(grade, mass):.2f}N d={d:.2f}m sd={sd:.2f}m')
 
+    #import matplotlib.pyplot as plt
     #plt.figure()
     #plt.plot(da, va)
     #plt.xlabel('distance (m)')
@@ -142,4 +154,3 @@ if __name__ == '__main__':
     ##plt.xlabel('time (s)')
     #plt.ylabel('velocity (mph)')
     #plt.show()
-

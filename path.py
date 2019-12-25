@@ -9,34 +9,8 @@ import math
 import numpy as np
 import xml.etree.ElementTree as et
 import track_point as tp
-
-
-def parse_trkpt(elem_trkpt: et.Element) -> Optional[tp.TrackPoint]:
-    "Return lat, lon, ele"
-    lat_str: str = ''
-    lon_str: str = ''
-
-    if not elem_trkpt:
-        return None
-
-    if elem_trkpt.attrib:
-        lat_str = elem_trkpt.attrib['lat']
-        lon_str = elem_trkpt.attrib['lon']
-        if not (lat_str and lon_str):
-            return None
-    else:
-        return None
-
-    elem_ele = elem_trkpt.find('.//{*}ele')
-    ele_str: str
-    if elem_ele is not None and elem_ele.text:
-        ele_str = elem_ele.text.strip()
-        if ele_str == '':
-            ele_str = '0.0'
-    else:
-        ele_str = '0.0'
-
-    return tp.TrackPoint(lat=float(lat_str), lon=float(lon_str), ele=float(ele_str))
+import gpx_track_list as gpx_tl
+import tcx_track_list as tcx_tl
 
 @dataclass
 class KmIndexDistance:
@@ -46,9 +20,9 @@ class KmIndexDistance:
 class Path:
     """Provide access to a path, a list of TrackPoints"""
 
-    def __init__(self: Path, filename: str) -> None:
+    def __init__(self: Path, tl: List[tp.TrackPoint]) -> None:
         # List of TrackPoints in this route
-        self.__track: List[tp.TrackPoint] = []
+        self.__track_list: List[tp.TrackPoint] = tl
 
         # List of KmIndexDistance with the last entrying being
         # the total distance
@@ -56,22 +30,11 @@ class Path:
         pt: tp.TrackPoint
         i: int
 
-        elem_trkpt: et.Element
-        tree = et.parse(filename)
-        root: et.Element = tree.getroot()
-
-        # Create a list of TrackPoints
-        for elem_trkpt in root.findall('.//{*}trkpt'):
-            p: Optional[tp.TrackPoint]
-            p = parse_trkpt(elem_trkpt)
-            if p is not None:
-                self.__track.append(p)
-
         # Build and index for each km
         km: float = 0
-        if len(self.__track) > 1:
+        if len(self.__track_list) > 1:
             prev: tp.TrackPoint
-            for i, pt in enumerate(self.__track):
+            for i, pt in enumerate(self.__track_list):
                 pt.index = i
                 if i == 0:
                     pt.total_distance = 0.0
@@ -81,8 +44,7 @@ class Path:
                 else:
                     dist: float = prev.distanceMeters(pt)
                     if dist< 0.0:
-                        print(f'WARNING distance < 0.0 ??', end='')
-                        print(f'  {filename} point[{i:>3}]: prev={prev} pt={pt} is {dist:<6.3f}')
+                        print(f'WARNING distance < 0.0 at point[{i:>3}]: prev={prev} pt={pt} is {dist:<6.3f}')
                     pt.total_distance = prev.total_distance + dist
                     #print(f'{i} dist={dist} pt.total_distance={pt.total_distance}')
                     prev.distance = dist
@@ -104,14 +66,14 @@ class Path:
                 #print('')
                 prev = pt
 
-        last_index: int = len(self.__track) - 1
-        total_distance: float = self.__track[last_index].total_distance
+        last_index: int = len(self.__track_list) - 1
+        total_distance: float = self.__track_list[last_index].total_distance
         self.__km_index_distance.append(KmIndexDistance(last_index, total_distance))
         #print(f'total_distance={total_distance}')
 
         #kid: KmIndexDistance
         #for i, kid in enumerate(self.__km_index_distance):
-        #    print(f'km[{i}]: index={kid.index:>3} distance={kid.distance:>11.3f} pt: {self.__track[kid.index]}')
+        #    print(f'km[{i}]: index={kid.index:>3} distance={kid.distance:>11.3f} pt: {self__track_list[kid.index]}')
 
     def total_distance(self: Path) -> float:
         """Return the total distance of the route"""
@@ -124,7 +86,7 @@ class Path:
             kid: KmIndexDistance = self.__km_index_distance[i]
             pt: tp.TrackPoint
             j: int
-            for j, pt in enumerate(self.__track[kid.index:], kid.index):
+            for j, pt in enumerate(self.__track_list[kid.index:], kid.index):
                 # Two adjacent points could be the same point so we use <= for both cases
                 if (pt.total_distance <= distance) and (distance <= (pt.total_distance + pt.distance)):
                     return pt;
@@ -144,20 +106,21 @@ class Path:
         else:
             return 0
 
-    def track(self: Path) -> List[tp.TrackPoint]:
-        return self.__track
+    def trackList(self: Path) -> List[tp.TrackPoint]:
+        return self.__track_list
 
     def km_index_distance(self: Path) -> List[KmIndexDistance]:
         return self.__km_index_distance
 
 if __name__ == '__main__':
-    test_data = './test/data/RAAM_TS00_route_snippet.gpx'
+    gpx_test_file = './test/data/RAAM_TS00_route_snippet.gpx'
 
-    path = Path(test_data)
+    path: Path = Path(gpx_tl.GpxTrackList(gpx_test_file))
     print(f'total_distance={path.total_distance()}')
 
-    t: List[tp.TrackPoint] = path.track()
-    for i, pt in enumerate(t):
+    i: int
+    pt: tp.TrackPoint
+    for i, pt in enumerate(path.trackList()):
         print(f'pt[{i:>3}]={pt}')
 
     import unittest
@@ -165,12 +128,12 @@ if __name__ == '__main__':
     class TestGpx(unittest.TestCase):
 
         def test_CreatePath(self):
-            path = Path(test_data)
-            self.assertTrue(len(path.track()) != 0)
+            path: Path = Path(gpx_tl.GpxTrackList(gpx_test_file))
+            self.assertTrue(len(path.trackList()) != 0)
             self.assertTrue(len(path.km_index_distance()) > 1)
 
         def test_getTrackPoint(self):
-            path: Path = Path(test_data)
+            path: Path = Path(gpx_tl.GpxTrackList(gpx_test_file))
             dist: float
 
             dist = -1
@@ -203,7 +166,7 @@ if __name__ == '__main__':
             dist = path.total_distance()
             pt = path.getTrackPoint(dist)
             self.assertTrue(pt is not None)
-            self.assertEqual(pt.index, len(path.track()) - 2)
+            self.assertEqual(pt.index, len(path.trackList()) - 2)
             self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
 
             dist = path.total_distance() + 1.0
