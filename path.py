@@ -5,12 +5,8 @@ from __future__ import annotations
 from typing import Optional, List
 from dataclasses import dataclass
 
-import math
-import numpy as np
-import xml.etree.ElementTree as et
 import track_point as tp
 import gpx_track_list as gpx_tl
-import tcx_track_list as tcx_tl
 
 @dataclass
 class KmIndexDistance:
@@ -92,7 +88,6 @@ class Path:
                     return pt;
         return None
 
-
     def slopeRadians(self: Path, distance: float) -> float:
         """
         Return the slope in radians of the route at distance
@@ -112,6 +107,9 @@ class Path:
     def km_index_distance(self: Path) -> List[KmIndexDistance]:
         return self.__km_index_distance
 
+    def compare(self: Path, other: Path) -> bool:
+        return tp.compareList(self.trackList(), other.trackList())
+
 if __name__ == '__main__':
     gpx_test_file = './test/data/RAAM_TS00_route_snippet.gpx'
 
@@ -127,38 +125,41 @@ if __name__ == '__main__':
 
     class TestGpx(unittest.TestCase):
 
-        def test_CreatePath(self):
+        def test_CreatePath(self: TestGpx):
             path: Path = Path(gpx_tl.GpxTrackList(gpx_test_file))
             self.assertTrue(len(path.trackList()) != 0)
             self.assertTrue(len(path.km_index_distance()) > 1)
 
-        def test_getTrackPoint(self):
+        def test_getTrackPoint(self: TestGpx):
             path: Path = Path(gpx_tl.GpxTrackList(gpx_test_file))
             dist: float
+            pt: Optional[tp.TrackPoint]
 
             dist = -1
-            pt: tp.TrackPoint
             pt = path.getTrackPoint(dist) # before beginning
             self.assertTrue(pt is None)
 
             dist = 0
             pt = path.getTrackPoint(dist)
             self.assertTrue(pt is not None)
-            self.assertEqual(pt.index, 0)
-            self.assertEqual(pt.total_distance, dist)
-            self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+            if pt is not None:
+                self.assertEqual(pt.index, 0)
+                self.assertEqual(pt.total_distance, dist)
+                self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
 
             dist = 1000
             pt = path.getTrackPoint(dist)
             self.assertTrue(pt is not None)
-            self.assertEqual(pt.index, 17)
-            self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+            if pt is not None:
+                self.assertEqual(pt.index, 17)
+                self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
 
             dist = 1300
             pt = path.getTrackPoint(dist)
             self.assertTrue(pt is not None)
-            self.assertEqual(pt.index, 21)
-            self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+            if pt is not None:
+                self.assertEqual(pt.index, 21)
+                self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
 
             # We get the penultimate point when asking for the point which contains the length ?
             # I'm not sure this is the "correct" answer but the last point has a distance, bearing
@@ -166,8 +167,9 @@ if __name__ == '__main__':
             dist = path.total_distance()
             pt = path.getTrackPoint(dist)
             self.assertTrue(pt is not None)
-            self.assertEqual(pt.index, len(path.trackList()) - 2)
-            self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+            if pt is not None:
+                self.assertEqual(pt.index, len(path.trackList()) - 2)
+                self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
 
             dist = path.total_distance() + 1.0
             pt = path.getTrackPoint(dist)
