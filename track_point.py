@@ -4,17 +4,119 @@
 
 from __future__ import annotations
 from enum import Enum
-from typing import Tuple, Optional
-from time import struct_time
+from typing import Tuple, Optional, Any, List
+from itertools import count
 
 import math
+import time
+import calendar
 import numpy as np
 
 earthR1 = 6_371_008.7714
 
+class Iterator:
+
+    def __init__(self: Iterator, tp: TrackPoint, start: int = 0) -> None:
+        self.cur = start
+        self.tp = tp
+
+    def __iter__(self: Iterator) -> Iterator:
+        return self
+
+    def __next__(self: Iterator) -> str:
+        value: Any
+        if (self.cur == 0):
+            value = self.tp.ele
+        elif (self.cur == 1):
+            value = self.tp.lat
+        elif (self.cur == 2):
+            value = self.tp.lon
+        elif (self.cur == 3):
+            value = self.tp.brg
+        elif (self.cur == 4):
+            value = self.tp.index
+        elif (self.cur == 5):
+            value = self.tp.total_distance
+        elif (self.cur == 6):
+            value = self.tp.distance
+        elif (self.cur == 7):
+            value = self.tp.slope
+        elif (self.cur == 8):
+            value = self.tp.speed
+        elif (self.cur == 9):
+            value = self.tp.hr
+        elif (self.cur == 10):
+            value = self.tp.watts
+        elif (self.cur == 11):
+            value = self.tp.radius
+        elif (self.cur == 12):
+            value = self.tp.time
+        else:
+            raise StopIteration
+        self.cur += 1
+        return str(value)
+
+def mkTrackPoint(
+    ele: float = 0.0,
+    lat: float = 0.0,
+    lon: float = 0.0,
+    brg: float = 0.0,
+    idx: int = 0,
+    tot: float = 0.0,
+    dis: float = 0.0,
+    slp: float = 0.0,
+    spd: float = 0.0,
+    hrt: float = 0.0,
+    wts: float = 0.0,
+    rds: float = 0.0,
+    tim: float = 0.0) -> TrackPoint:
+
+    pt: TrackPoint = TrackPoint()
+    pt.ele = ele
+    pt.lat = lat
+    pt.lon = lon
+    pt.brg = brg
+    pt.index = idx
+    pt.total_distance = tot
+    pt.distance = dis
+    pt.slope = slp
+    pt.speed = spd
+    pt.hr = hrt
+    pt.watts = wts
+    pt.radius = rds
+    pt.time = tim
+
+    return pt
+
+def printList(tl: List[TrackPoint]) -> None:
+    #print(f'len={len(tl)}')
+    i: int
+    pt: TrackPoint
+    for i, pt in enumerate(tl):
+        print(f'{i:>3} ', end='')
+        if i is not None and pt is not None:
+            print(f'pt[{i:>3}]={pt}')
+
+def compareList(tl1: List[TrackPoint], tl2: List[TrackPoint]) -> bool:
+    #print('tl1:'); printList(tl1)
+    #print('tl2:'); printList(tl2)
+    i: int
+    pt1: TrackPoint
+    pt2: TrackPoint
+
+    if len(tl1) != len(tl2):
+        #print(' --- False, len !=')
+        return False
+    for i, pt1, pt2 in zip(count(), tl1, tl2):
+        if pt1 != pt2:
+            #print(f' --- False, pt != at index {i}')
+            return False
+    #print(' --- True')
+    return True
+
 class TrackPoint:
 
-    def __init__(self: TrackPoint, lat: float=0.0, lon: float=0.0, ele: float=0.0, brg: float=None, dis: float=None, spd: float=0.0, hrt: float=0.0, wts: float=0.0, tim: Optional[struct_time] = None, radius: float=earthR1) -> None:
+    def __init__(self: TrackPoint, lat: float=0.0, lon: float=0.0, ele: float=0.0, brg: float=None, dis: float=None, spd: float=0.0, hrt: float=0.0, wts: float=0.0, tim: float=0.0, rds: float=earthR1) -> None:
         """
         Create a new TrackPoint using either lat, lon and ele to define the point
         or if brg and dis are supplied then create a new TrackPoint which is located
@@ -26,56 +128,86 @@ class TrackPoint:
         ele: Elevation in meters.
         brg: Bearing in SignedDecDeg from lat, lon to this new point (dis must be supplied)
         dis: Distance in meters from lat, lon to this new point (brg must be supplied)
-        radius: Radius of sphere only used with when creating a new point using brg and dis
+        rds: Radius of sphere only used with when creating a new point using brg and dis
         """
-        self.ele = ele
+        self.ele: float = ele
+        self.lat: float = 0.0
+        self.lon: float = 0.0
+        self.brg: float = 0.0
+        self.index: int = 0 # Index of this point
+        self.total_distance: float = 0.0 # total distance in meters to this point
+        self.distance: float = 0.0 # distance in meters to next point
+        self.slope: float = 0.0 # slope in radians to next point
+        self.speed: float = spd # speed in meters/sec at this point
+        self.hr: float = hrt # heart rate in beats/min at this point
+        self.watts: float = wts # Watts at this point
+        self.radius: float = rds # radius of sphere
+        self.time: float = tim # Time at this point
+
         if (brg is not None) and (dis is not None):
             brg = math.radians(brg)
             lat = math.radians(lat)
             lon = math.radians(lon)
-            self.lat = math.asin((math.sin(lat) * math.cos(dis/radius)) + \
-                                 (math.cos(lat) * math.sin(dis/radius) * math.cos(brg)))
-            self.lon = lon + math.atan2((math.sin(brg) * math.sin(dis/radius) * math.cos(lat)),
-                                        (math.cos(dis/radius) - (math.sin(lat) * math.sin(self.lat))))
+            self.lat = math.asin((math.sin(lat) * math.cos(dis/rds)) + \
+                                 (math.cos(lat) * math.sin(dis/rds) * math.cos(brg)))
+            self.lon = lon + math.atan2((math.sin(brg) * math.sin(dis/rds) * math.cos(lat)),
+                                        (math.cos(dis/rds) - (math.sin(lat) * math.sin(self.lat))))
+            self.brg = brg
         elif (brg is None) and (dis is None):
             self.lat = math.radians(lat)
             self.lon = math.radians(lon)
+            self.brg = 0.0
         elif (brg is None):
             raise ValueError("brg is None but dis is not")
         else:
             raise ValueError("dis is None but brg is not")
 
-        self.index: int = 0 # Index of this point
-        self.total_distance: float = 0.0 # total distance in meters to this point
-        self.distance: float = 0.0 # distance in meters to next point
-        self.slope: float = 0.0 # slope in radians to next point
-        self.bearing: float = 0.0 # bearing in radians to next point
-        self.speed: float = spd # speed in meters/sec at this point
-        self.hr: float = hrt # heart rate in beats/min at this point
-        self.watts: float = wts # Watts at this point
-        self.time: Optional[struct_time] = tim # Time at this point
+    def __iter__(self: TrackPoint) -> Iterator:
+        return Iterator(self)
 
+    def __eq__(self: TrackPoint, other: Any) -> bool:
+        #print(f'TrackPoint.__eq__: self={self} other={other}', end='')
+        if not isinstance(other, TrackPoint):
+            #print(' --- False')
+            return False
+        if self is other:
+            #print(' --- True')
+            return True
+        result = (self.ele == other.ele) and \
+                 (self.lat == other.lat) and \
+                 (self.lon == other.lon) and \
+                 (self.brg == other.brg) and \
+                 (self.index == other.index) and \
+                 (self.total_distance == other.total_distance) and \
+                 (self.distance == other.distance) and \
+                 (self.slope == other.slope) and \
+                 (self.speed == other.speed) and \
+                 (self.hr == other.hr) and \
+                 (self.watts == other.watts) and \
+                 (self.radius == other.radius) and \
+                 (self.time == other.time)
+        #print(f' --- {result}')
+        return result
 
     def __str__(self: TrackPoint) -> str:
-        lat, lon = self.signedDecDegs()
-        return f"{{'lat': {lat:>+9.6f}, 'lon': {lon:>+9.6f}, 'ele': {self.ele:>9.3f}, 'tot': {self.total_distance:>9.3f}, 'dis': {self.distance:>6.3f}, 'slp': {self.slope:>6.3f},  'brg': {self.bearing:>6.3f}, 'spd': {self.speed:>6.3f}, 'hrt': {self.hr:>4.1f}, 'wts': {self.watts:>6.2f}, 'tim': {self.time}}}"
+        lat, lon, brg, slope = self.signedDecDegs()
+        return f"{{'lat': {lat:>+9.6f}, 'lon': {lon:>+9.6f}, 'ele': {self.ele:>9.3f}, 'tot': {self.total_distance:>9.3f}, 'dis': {self.distance:>6.3f}, 'slp': {slope:>+9.6f}, 'brg': {brg:>+9.6f}, 'spd': {self.speed:>6.3f}, 'hrt': {self.hr:>4.1f}, 'wts': {self.watts:>6.2f}, 'tim': {self.time}}}"
 
+    def radians(self: TrackPoint) -> Tuple[float, float, float, float]:
+        """Return lat, lon and brg as radians"""
+        return self.lat, self.lon, self.brg, self.slope
 
-    def radians(self: TrackPoint) -> Tuple[float, float]:
-        """Return lat, lon as radians"""
-        return self.lat, self.lon
+    def signedDecDegs(self: TrackPoint) -> Tuple[float, float, float, float]:
+        """Return lat, lon and brg as degrees"""
+        return math.degrees(self.lat), math.degrees(self.lon), math.degrees(self.brg), math.degrees(self.slope)
 
-    def signedDecDegs(self: TrackPoint) -> Tuple[float, float]:
-        """Return lat, lon as radians"""
-        return math.degrees(self.lat), math.degrees(self.lon)
-
-    def distanceMeters(self: TrackPoint, other: TrackPoint, radius: float=earthR1) -> float:
+    def distanceMeters(self: TrackPoint, other: TrackPoint, rds: float=earthR1) -> float:
         """Return distance between other and self in meters"""
         dLat_haversine = math.sin((other.lat - self.lat) / 2.0)
         dLon_haversine = math.sin((other.lon - self.lon) / 2.0)
         a = (dLat_haversine ** 2) + (math.cos(self.lat) * math.cos(other.lat) * (dLon_haversine ** 2.0))
         c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0-a))
-        return radius * c
+        return rds * c
 
     def bearingRadians(self: TrackPoint, other: TrackPoint) -> float:
         """Return bearing in degrees North = 0.0, East = 90.0, South = 180, West = -90"""
@@ -106,6 +238,7 @@ class TrackPoint:
 
 if __name__ == '__main__':
     # Compare haversine with TrackPoint.distance
+    import copy
     import timeit
     import haversine as hs
 
@@ -136,96 +269,101 @@ if __name__ == '__main__':
 
     class TestTrackPoint(unittest.TestCase):
 
-        def test_init_default(self):
+        def test_init_default(self: TestTrackPoint):
             pt = TrackPoint()
             self.assertEqual(pt.lat, 0.0)
             self.assertEqual(pt.lon, 0.0)
             self.assertEqual(pt.ele, 0.0)
 
-        def test_init_by_position(self):
+        def test_init_by_position(self: TestTrackPoint):
             pt = TrackPoint(1.0, 2.0, 3.0)
             self.assertEqual(pt.lat, math.radians(1.0))
             self.assertEqual(pt.lon, math.radians(2.0))
             self.assertEqual(pt.ele, 3.0)
 
-        def test_init_by_name(self):
+        def test_init_by_name(self: TestTrackPoint):
             pt = TrackPoint(lon=1.0, lat=2.0, ele=3.0)
             self.assertEqual(pt.lon, math.radians(1.0))
             self.assertEqual(pt.lat, math.radians(2.0))
             self.assertEqual(pt.ele, 3.0)
 
-        def test_str(self):
+        def test_str(self: TestTrackPoint):
             pt = TrackPoint(lon=1.0, lat=2.0, ele=3.0)
-            self.assertEqual(f'{pt}', '{\'lat\': +2.000000, \'lon\': +1.000000, \'ele\':     3.000, \'tot\':     0.000, \'dis\':  0.000, \'slp\':  0.000,  \'brg\':  0.000, \'spd\':  0.000, \'hrt\':  0.0, \'wts\':   0.00, \'tim\': None}')
-        def test_radians(self):
+            self.assertEqual(f'{pt}', '{\'lat\': +2.000000, \'lon\': +1.000000, \'ele\':     3.000, \'tot\':     0.000, \'dis\':  0.000, \'slp\': +0.000000, \'brg\': +0.000000, \'spd\':  0.000, \'hrt\':  0.0, \'wts\':   0.00, \'tim\': 0.0}')
+
+        def test_radians(self: TestTrackPoint):
             pt = TrackPoint(lat=1.0, lon=2.0)
-            lat, lon = pt.radians()
+            lat, lon, brg, slp = pt.radians()
             self.assertEqual(lat, math.radians(1.0))
             self.assertEqual(lon, math.radians(2.0))
+            self.assertEqual(brg, math.radians(0))
+            self.assertEqual(slp, math.radians(0))
 
-        def test_signedDecDegs(self):
+        def test_signedDecDegs(self: TestTrackPoint):
             pt = TrackPoint(lat=1.0, lon=2.0)
-            lat, lon = pt.signedDecDegs()
+            lat, lon, brg, slp = pt.signedDecDegs()
             self.assertEqual(lat, 1.0)
             self.assertEqual(lon, 2.0)
+            self.assertEqual(brg, math.radians(0))
+            self.assertEqual(slp, math.radians(0))
 
-        def test_distance_0(self):
+        def test_distance_0(self: TestTrackPoint):
             pt1 = TrackPoint()
             pt2 = TrackPoint()
             d = pt1.distanceMeters(pt2)
             self.assertEqual(d, 0.0)
 
-        def test_distance_non_0(self):
+        def test_distance_non_0(self: TestTrackPoint):
             pt1 = TrackPoint(lat=1.0, lon=2.0)
             pt2 = TrackPoint(lat=1.0, lon=3.0)
             d = pt1.distanceMeters(pt2)
             self.assertEqual(round(d, 3), 111178.144)
 
-        def test_bearing_0(self):
+        def test_bearing_0(self: TestTrackPoint):
             pt1 = TrackPoint(lat=0.0, lon=90.0)
             pt2 = TrackPoint(lat=1.0, lon=90.0)
             b = pt1.bearingDegrees(pt2)
             self.assertEqual(round(b, 3), 0.000)
 
-        def test_bearing_90(self):
+        def test_bearing_90(self: TestTrackPoint):
             pt1 = TrackPoint(lat=0.0, lon=90.0)
             pt2 = TrackPoint(lat=0.0, lon=91.0)
             b = pt1.bearingDegrees(pt2)
             self.assertEqual(round(b, 3), 90.000)
 
-        def test_bearing_180(self):
+        def test_bearing_180(self: TestTrackPoint):
             pt1 = TrackPoint(lat=1.0, lon=90.0)
             pt2 = TrackPoint(lat=0.0, lon=90.0)
             b = pt1.bearingDegrees(pt2)
             self.assertEqual(round(b, 3), 180.000)
 
-        def test_bearing_270(self):
+        def test_bearing_270(self: TestTrackPoint):
             pt1 = TrackPoint(lat=0.0, lon=90.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0)
             b = pt1.bearingDegrees(pt2)
             self.assertEqual(round(b, 3), 270.000)
 
-        def test_elevationDiffMeters_default_0(self):
+        def test_elevationDiffMeters_default_0(self: TestTrackPoint):
             pt1 = TrackPoint(lat=0.0, lon=90.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0)
             d = pt1.elevationDiffMeters(pt2)
             self.assertEqual(0.0, d)
 
-        def test_elevationDiffMeters_1(self):
+        def test_elevationDiffMeters_1(self: TestTrackPoint):
             pt1 = TrackPoint(lat=0.0, lon=90.0, ele=99.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0, ele=100.0)
             d = pt1.elevationDiffMeters(pt2)
             #print(f'elevationDiffMeters_1: {d}')
             self.assertEqual(1.0, d)
 
-        def test_elevationDiffMeters_neg_1(self):
+        def test_elevationDiffMeters_neg_1(self: TestTrackPoint):
             pt1 = TrackPoint(lat=0.0, lon=90.0, ele=100.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0, ele=99.0)
             d = pt1.elevationDiffMeters(pt2)
             #print(f'elevationDiffMeters_neg_1: {d}')
             self.assertEqual(-1.0, d)
 
-        def test_lat_lon_1deg_0_to_90(self):
+        def test_lat_lon_1deg_0_to_90(self: TestTrackPoint):
              #print("")
              pt1 = TrackPoint(lat=89.0, lon=0.0, ele=3.0)
              pt2 = TrackPoint(lat=90.0, lon=0.0, ele=3.0)
@@ -299,22 +437,22 @@ if __name__ == '__main__':
              #print(f'y is {y}')
              self.assertEqual(round(y, 6), 111195.079734)
 
-        def test_bearing_distance_exception_brg_not_None_dst_is_None(self):
+        def test_bearing_distance_exception_brg_not_None_dst_is_None(self: TestTrackPoint):
             self.assertRaises(ValueError, TrackPoint, lat=10.0, lon=20.0, ele=3.0, brg=15.0, dis=None)
             self.assertRaises(ValueError, TrackPoint, lat=10.0, lon=20.0, ele=3.0, brg=15.0)
 
-        def test_bearing_distance_exception_brg_is_None_dst_is_not_None(self):
+        def test_bearing_distance_exception_brg_is_None_dst_is_not_None(self: TestTrackPoint):
             self.assertRaises(ValueError, TrackPoint, lat=10.0, lon=20.0, ele=3.0, brg=None, dis=1.0)
             self.assertRaises(ValueError, TrackPoint, lat=10.0, lon=20.0, ele=3.0, dis=1.0)
 
-        def test_bearing_distance_same_point(self):
+        def test_bearing_distance_same_point(self: TestTrackPoint):
              pt1 = TrackPoint(lat=10.0, lon=20.0, ele=3.0)
              pt2 = TrackPoint(lat=10.0, lon=20.0, ele=3.0, brg=15.0, dis=0.0)
              self.assertEqual(pt1.lat, pt2.lat)
              self.assertEqual(pt1.lon, pt2.lon)
              self.assertEqual(pt1.ele, pt2.ele)
 
-        def test_bearing_distance_different_points(self):
+        def test_bearing_distance_different_points(self: TestTrackPoint):
              pt1 = TrackPoint(lat=10.0, lon=20.0, ele=3.0)
              pt2 = TrackPoint(lat=11.0, lon=20.0, ele=3.0)
              distance = pt1.distanceMeters(pt2)
@@ -324,5 +462,110 @@ if __name__ == '__main__':
              self.assertEqual(pt2.lon, pt3.lon)
              self.assertEqual(pt2.ele, pt3.ele)
 
+        def test_makeTrackPoint(self: TestTrackPoint):
+            pt: TrackPoint = mkTrackPoint()
+            self.assertEqual(pt.ele, 0.0)
+            self.assertEqual(pt.lat, 0.0)
+            self.assertEqual(pt.lon, 0.0)
+            self.assertEqual(pt.brg, 0.0)
+            self.assertEqual(pt.index, 0)
+            self.assertEqual(pt.total_distance, 0.0)
+            self.assertEqual(pt.distance, 0.0)
+            self.assertEqual(pt.slope, 0.0)
+            self.assertEqual(pt.speed, 0.0)
+            self.assertEqual(pt.hr, 0.0)
+            self.assertEqual(pt.watts, 0.0)
+            self.assertEqual(pt.radius, 0.0)
+            self.assertEqual(pt.time, 0.0)
+
+        def test_makeTrackPointNonZero(self: TestTrackPoint):
+            pt: TrackPoint = mkTrackPoint(ele=1, lat=2, lon=3, brg=4, idx=5, tot=6, dis=7,
+                                          slp=8, spd=9, hrt=10, wts=11, rds=12, tim=13)
+            self.assertEqual(pt.ele, 1.0)
+            self.assertEqual(pt.lat, 2.0)
+            self.assertEqual(pt.lon, 3.0)
+            self.assertEqual(pt.brg, 4.0)
+            self.assertEqual(pt.index, 5)
+            self.assertEqual(pt.total_distance, 6.0)
+            self.assertEqual(pt.distance, 7.0)
+            self.assertEqual(pt.slope, 8.0)
+            self.assertEqual(pt.speed, 9.0)
+            self.assertEqual(pt.hr, 10.0)
+            self.assertEqual(pt.watts, 11.0)
+            self.assertEqual(pt.radius, 12.0)
+            self.assertEqual(pt.time, 13.0)
+
+        def test_iterator(self: TestTrackPoint):
+            ele=1; lat=2; lon=3; brg=4; idx=5; tot=6; dis=7; slp=8; spd=9; hrt=10; wts=11; rds=12; tim=13
+            pt: TrackPoint = mkTrackPoint(ele=ele, lat=lat, lon=lon, brg=brg, idx=idx, tot=tot, \
+                                          dis=dis, slp=slp, spd=spd, hrt=hrt, wts=wts, rds=rds, tim=tim)
+            i: int
+            f: Any
+            for i, f in enumerate(pt):
+                if (i == 0):
+                    self.assertEqual(f, str(ele))
+                elif (i == 1):
+                    self.assertEqual(f, str(lat))
+                elif (i == 2):
+                    self.assertEqual(f, str(lon))
+                elif (i == 3):
+                    self.assertEqual(f, str(brg))
+                elif (i == 4):
+                    self.assertEqual(f, str(idx))
+                elif (i == 5):
+                    self.assertEqual(f, str(tot))
+                elif (i == 6):
+                    self.assertEqual(f, str(dis))
+                elif (i == 7):
+                    self.assertEqual(f, str(slp))
+                elif (i == 8):
+                    self.assertEqual(f, str(spd))
+                elif (i == 9):
+                    self.assertEqual(f, str(hrt))
+                elif (i == 10):
+                    self.assertEqual(f, str(wts))
+                elif (i == 11):
+                    self.assertEqual(f, str(rds))
+                elif (i == 12):
+                    self.assertEqual(f, str(tim))
+
+        def test_eq(self: TestTrackPoint):
+            ele=1; lat=2; lon=3; brg=4; idx=5; tot=6; dis=7; slp=8; spd=9; hrt=10; wts=11; rds=12; tim=13
+            pt1: TrackPoint = mkTrackPoint(ele=ele, lat=lat, lon=lon, brg=brg, idx=idx, tot=tot, \
+                                          dis=dis, slp=slp, spd=spd, hrt=hrt, wts=wts, rds=rds, tim=tim)
+
+            self.assertFalse(pt1 == 1)
+            self.assertTrue(pt1 == pt1)
+            pt2: TrackPoint = copy.deepcopy(pt1)
+            self.assertTrue(pt1 == pt2)
+            self.assertTrue(pt2 == pt1)
+            pt2.total_distance = pt1.total_distance + 1
+            self.assertTrue(pt1 != pt2)
+            self.assertTrue(pt2 != pt1)
+            pt2.total_distance = pt1.total_distance
+            self.assertTrue(pt1 == pt2)
+            self.assertTrue(pt2 == pt1)
+
+        def test_compareList(self: TestTrackPoint):
+            ele=1; lat=2; lon=3; brg=4; idx=5; tot=6; dis=7; slp=8; spd=9; hrt=10; wts=11; rds=12; tim=13
+            pt1: TrackPoint = mkTrackPoint(ele=ele, lat=lat, lon=lon, brg=brg, idx=idx, tot=tot, \
+                                          dis=dis, slp=slp, spd=spd, hrt=hrt, wts=wts, rds=rds, tim=tim)
+
+            pt2: TrackPoint = copy.deepcopy(pt1)
+            pt2.total_distance = pt1.total_distance + 1
+
+            tl1: List[TrackPoint] = [pt1, pt1]
+            tl2: List[TrackPoint] = [pt1, pt2]
+            tl3: List[TrackPoint] = [pt2, pt1]
+
+            self.assertTrue(compareList(tl1, tl1))
+            self.assertTrue(compareList(tl2, tl2))
+            self.assertTrue(compareList(tl3, tl3))
+
+            self.assertFalse(compareList(tl1, tl2))
+            self.assertFalse(compareList(tl2, tl1))
+
+            self.assertFalse(compareList(tl1, tl3))
+            self.assertFalse(compareList(tl3, tl1))
 
     unittest.main()

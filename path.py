@@ -40,7 +40,7 @@ class Path:
                     pt.total_distance = 0.0
                     pt.distance = 0.0
                     pt.slope = 0.0
-                    pt.bearing = 0.0
+                    pt.brg = 0.0
                 else:
                     dist: float = prev.distanceMeters(pt)
                     if dist< 0.0:
@@ -49,7 +49,7 @@ class Path:
                     #print(f'{i} dist={dist} pt.total_distance={pt.total_distance}')
                     prev.distance = dist
                     prev.slope = prev.slopeRadians(pt)
-                    prev.bearing = prev.bearingRadians(pt)
+                    prev.brg = prev.bearingRadians(pt)
 
                 # First point whose begining is >= km
                 kmx: float = pt.total_distance / 1000.0

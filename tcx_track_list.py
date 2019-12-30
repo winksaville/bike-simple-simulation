@@ -4,21 +4,22 @@
 from __future__ import annotations
 from typing import Optional, List
 from dataclasses import dataclass
-from time import struct_time, strptime
 
 import math
+import calendar
+import time
 import numpy as np
 import xml.etree.ElementTree as et
 import track_point as tp
 
-def parse_time_subElement(elem_time: et.Element, name: str) -> Optional[struct_time]:
+def parse_time_subElement(elem_time: et.Element, name: str) -> float:
     elem = elem_time.find('.//{*}' + name)
-    val_time: Optional[struct_time]
+    val_time: float
     if elem is not None and elem.text:
         val_str: str = elem.text.strip()
-        val_time = strptime(val_str, "%Y-%m-%dT%H:%M:%SZ")
+        val_time = calendar.timegm(time.strptime(val_str, "%Y-%m-%dT%H:%M:%SZ"))
     else:
-        val_time = None
+        val_time = 0.0
     return val_time
 
 def parse_float_subElement(elem_float: et.Element, name: str) -> float:
@@ -37,7 +38,7 @@ def parse_trackpoint(elem: et.Element) -> Optional[tp.TrackPoint]:
     if not elem:
         return None
 
-    tim: Optional[struct_time] = parse_time_subElement(elem, 'Time')
+    tim: float = parse_time_subElement(elem, 'Time')
     lat: float = parse_float_subElement(elem, 'LatitudeDegrees')
     lon: float = parse_float_subElement(elem, 'LongitudeDegrees')
     ele: float = parse_float_subElement(elem, 'AltitudeMeters')
