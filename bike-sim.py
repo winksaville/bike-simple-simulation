@@ -94,7 +94,7 @@ if __name__ == '__main__':
         exit(1)
 
 
-    print(f'total_distance={trklist.total_distance()}')
+    print(f'total distance={trklist.tot()}')
 
     # the actual program:
     v=0.0       # initial velocity
@@ -111,9 +111,9 @@ if __name__ == '__main__':
 
     # loop over time until end of distance:
     t: float = 0.0
-    total_distance: float = trklist.total_distance()
+    total_distance: float = trklist.tot()
     while d < total_distance:
-        grade = trklist.slopeRadians(d)
+        grade = trklist.slpRadians(d)
         totalForce = fDrag(v) + fRolling(grade, mass, v) + fGravity(grade, mass)
         powerNeeded = totalForce * v / eta
         netPower = power - powerNeeded

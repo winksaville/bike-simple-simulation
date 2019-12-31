@@ -9,9 +9,9 @@ import track_point as tp
 import gpx_track_list as gpx_tl
 
 @dataclass
-class KmIndexDistance:
-    index: int
-    distance: float
+class KmIdxDis:
+    idx: int
+    dis: float
 
 class Path:
     """Provide access to a path, a list of TrackPoints"""
@@ -20,9 +20,9 @@ class Path:
         # List of TrackPoints in this route
         self.__track_list: List[tp.TrackPoint] = tl
 
-        # List of KmIndexDistance with the last entrying being
+        # List of KmIdxDis with the last entrying being
         # the total distance
-        self.__km_index_distance: List[KmIndexDistance] = []
+        self.__km_idx_dis: List[KmIdxDis] = []
         pt: tp.TrackPoint
         i: int
 
@@ -31,64 +31,64 @@ class Path:
         if len(self.__track_list) > 1:
             prev: tp.TrackPoint
             for i, pt in enumerate(self.__track_list):
-                pt.index = i
+                pt.idx = i
                 if i == 0:
-                    pt.total_distance = 0.0
-                    pt.distance = 0.0
-                    pt.slope = 0.0
+                    pt.tot = 0.0
+                    pt.dis = 0.0
+                    pt.slp = 0.0
                     pt.brg = 0.0
                 else:
-                    dist: float = prev.distanceMeters(pt)
-                    if dist< 0.0:
-                        print(f'WARNING distance < 0.0 at point[{i:>3}]: prev={prev} pt={pt} is {dist:<6.3f}')
-                    pt.total_distance = prev.total_distance + dist
-                    #print(f'{i} dist={dist} pt.total_distance={pt.total_distance}')
-                    prev.distance = dist
-                    prev.slope = prev.slopeRadians(pt)
-                    prev.brg = prev.bearingRadians(pt)
+                    distance: float = prev.disMeters(pt)
+                    if distance< 0.0:
+                        print(f'WARNING distance < 0.0 at point[{i:>3}]: prev={prev} pt={pt} is {distance:<6.3f}')
+                    pt.tot = prev.tot + distance
+                    #print(f'{i} distance={distance} pt.tot={pt.tot}')
+                    prev.dis = distance
+                    prev.slp = prev.slpRadians(pt)
+                    prev.brg = prev.brgRadians(pt)
 
                 # First point whose begining is >= km
-                kmx: float = pt.total_distance / 1000.0
+                kmx: float = pt.tot / 1000.0
                 if kmx >= km:
                     if (kmx == km):
-                        self.__km_index_distance.append(KmIndexDistance(i, pt.total_distance))
+                        self.__km_idx_dis.append(KmIdxDis(i, pt.tot))
                     else:
                         assert((i > 0) \
-                                and (prev.total_distance < (km * 1000)) \
-                                and (pt.total_distance > (km * 1000)))
-                        self.__km_index_distance.append(KmIndexDistance(i - 1, prev.total_distance))
+                                and (prev.tot < (km * 1000)) \
+                                and (pt.tot > (km * 1000)))
+                        self.__km_idx_dis.append(KmIdxDis(i - 1, prev.tot))
                     km += 1.0
-                #print(f'{filename} point[{i:>3}]: {pt} is {distance:>6.3f} from prev, total is {total_distance:>11.3f}', end='')
+                #print(f'{filename} point[{i:>3}]: {pt} is {distance:>6.3f} from prev, total is {tot:>11.3f}', end='')
                 #print('')
                 prev = pt
 
         last_index: int = len(self.__track_list) - 1
-        total_distance: float = self.__track_list[last_index].total_distance
-        self.__km_index_distance.append(KmIndexDistance(last_index, total_distance))
-        #print(f'total_distance={total_distance}')
+        tot: float = self.__track_list[last_index].tot
+        self.__km_idx_dis.append(KmIdxDis(last_index, tot))
+        #print(f'tot={tot}')
 
-        #kid: KmIndexDistance
-        #for i, kid in enumerate(self.__km_index_distance):
-        #    print(f'km[{i}]: index={kid.index:>3} distance={kid.distance:>11.3f} pt: {self__track_list[kid.index]}')
+        #kid: KmIdxDis
+        #for i, kid in enumerate(self.__km_idx_dis):
+        #    print(f'km[{i}]: idx={kid.idx:>3} distance={kid.dis:>11.3f} pt: {self__track_list[kid.idx]}')
 
-    def total_distance(self: Path) -> float:
+    def tot(self: Path) -> float:
         """Return the total distance of the route"""
-        return self.__km_index_distance[len(self.__km_index_distance) - 1].distance
+        return self.__km_idx_dis[len(self.__km_idx_dis) - 1].dis
 
     def getTrackPoint(self: Path, distance: float) -> Optional[tp.TrackPoint]:
         """Return the index into track of the point that includes the distance"""
         i: int = int(distance / 1000)
-        if i >= 0 and i < len(self.__km_index_distance):
-            kid: KmIndexDistance = self.__km_index_distance[i]
+        if i >= 0 and i < len(self.__km_idx_dis):
+            kid: KmIdxDis = self.__km_idx_dis[i]
             pt: tp.TrackPoint
             j: int
-            for j, pt in enumerate(self.__track_list[kid.index:], kid.index):
+            for j, pt in enumerate(self.__track_list[kid.idx:], kid.idx):
                 # Two adjacent points could be the same point so we use <= for both cases
-                if (pt.total_distance <= distance) and (distance <= (pt.total_distance + pt.distance)):
+                if (pt.tot <= distance) and (distance <= (pt.tot + pt.dis)):
                     return pt;
         return None
 
-    def slopeRadians(self: Path, distance: float) -> float:
+    def slpRadians(self: Path, distance: float) -> float:
         """
         Return the slope in radians of the route at distance
 
@@ -97,15 +97,15 @@ class Path:
 
         pt: Optional[tp.TrackPoint] = self.getTrackPoint(distance)
         if pt is not None:
-            return pt.slope
+            return pt.slp
         else:
             return 0
 
     def trackList(self: Path) -> List[tp.TrackPoint]:
         return self.__track_list
 
-    def km_index_distance(self: Path) -> List[KmIndexDistance]:
-        return self.__km_index_distance
+    def km_idx_dis(self: Path) -> List[KmIdxDis]:
+        return self.__km_idx_dis
 
     def compare(self: Path, other: Path) -> bool:
         return tp.compareList(self.trackList(), other.trackList())
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     gpx_test_file = './test/data/RAAM_TS00_route_snippet.gpx'
 
     path: Path = Path(gpx_tl.GpxTrackList(gpx_test_file))
-    print(f'total_distance={path.total_distance()}')
+    print(f'tot={path.tot()}')
 
     i: int
     pt: tp.TrackPoint
@@ -128,51 +128,51 @@ if __name__ == '__main__':
         def test_CreatePath(self: TestGpx):
             path: Path = Path(gpx_tl.GpxTrackList(gpx_test_file))
             self.assertTrue(len(path.trackList()) != 0)
-            self.assertTrue(len(path.km_index_distance()) > 1)
+            self.assertTrue(len(path.km_idx_dis()) > 1)
 
         def test_getTrackPoint(self: TestGpx):
             path: Path = Path(gpx_tl.GpxTrackList(gpx_test_file))
-            dist: float
+            distance: float
             pt: Optional[tp.TrackPoint]
 
-            dist = -1
-            pt = path.getTrackPoint(dist) # before beginning
+            distance = -1
+            pt = path.getTrackPoint(distance) # before beginning
             self.assertTrue(pt is None)
 
-            dist = 0
-            pt = path.getTrackPoint(dist)
+            distance = 0
+            pt = path.getTrackPoint(distance)
             self.assertTrue(pt is not None)
             if pt is not None:
-                self.assertEqual(pt.index, 0)
-                self.assertEqual(pt.total_distance, dist)
-                self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+                self.assertEqual(pt.idx, 0)
+                self.assertEqual(pt.tot, distance)
+                self.assertTrue((pt.tot <= distance) and (distance <= (pt.tot + pt.dis)))
 
-            dist = 1000
-            pt = path.getTrackPoint(dist)
+            distance = 1000
+            pt = path.getTrackPoint(distance)
             self.assertTrue(pt is not None)
             if pt is not None:
-                self.assertEqual(pt.index, 17)
-                self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+                self.assertEqual(pt.idx, 17)
+                self.assertTrue((pt.tot <= distance) and (distance <= (pt.tot + pt.dis)))
 
-            dist = 1300
-            pt = path.getTrackPoint(dist)
+            distance = 1300
+            pt = path.getTrackPoint(distance)
             self.assertTrue(pt is not None)
             if pt is not None:
-                self.assertEqual(pt.index, 21)
-                self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+                self.assertEqual(pt.idx, 21)
+                self.assertTrue((pt.tot <= distance) and (distance <= (pt.tot + pt.dis)))
 
             # We get the penultimate point when asking for the point which contains the length ?
             # I'm not sure this is the "correct" answer but the last point has a distance, bearing
             # and slope of zero, so returning the penultimate point is not unreasonable.
-            dist = path.total_distance()
-            pt = path.getTrackPoint(dist)
+            distance = path.tot()
+            pt = path.getTrackPoint(distance)
             self.assertTrue(pt is not None)
             if pt is not None:
-                self.assertEqual(pt.index, len(path.trackList()) - 2)
-                self.assertTrue((pt.total_distance <= dist) and (dist <= (pt.total_distance + pt.distance)))
+                self.assertEqual(pt.idx, len(path.trackList()) - 2)
+                self.assertTrue((pt.tot <= distance) and (distance <= (pt.tot + pt.dis)))
 
-            dist = path.total_distance() + 1.0
-            pt = path.getTrackPoint(dist)
+            distance = path.tot() + 1.0
+            pt = path.getTrackPoint(distance)
             self.assertTrue(pt is None)
 
     unittest.main()
