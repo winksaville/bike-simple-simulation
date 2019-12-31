@@ -224,17 +224,17 @@ class TrackPoint:
         else:
             return math.degrees(b)
 
-    def elevationDiffMeters(self: TrackPoint, other: TrackPoint) -> float:
+    def eleDiffMeters(self: TrackPoint, other: TrackPoint) -> float:
         """Eleveation difference between returns other.diff - self.diff"""
         return other.ele - self.ele
 
     def slpPercent(self: TrackPoint, other: TrackPoint) -> float:
         """Slope as a precentage positive for uphill and negative for downhill"""
-        return (self.elevationDiffMeters(other) / self.disMeters(other)) * 100.0
+        return (self.eleDiffMeters(other) / self.disMeters(other)) * 100.0
 
     def slpRadians(self: TrackPoint, other: TrackPoint) -> float:
         """Slope in radians, positive for uphill and negative for downhill"""
-        return math.atan2(self.elevationDiffMeters(other), self.disMeters(other))
+        return math.atan2(self.eleDiffMeters(other), self.disMeters(other))
 
 if __name__ == '__main__':
     # Compare haversine with TrackPoint.dis
@@ -343,24 +343,24 @@ if __name__ == '__main__':
             b = pt1.brgDeg(pt2)
             self.assertEqual(round(b, 3), 270.000)
 
-        def test_elevationDiffMeters_default_0(self: TestTrackPoint):
+        def test_eleDiffMeters_default_0(self: TestTrackPoint):
             pt1 = TrackPoint(lat=0.0, lon=90.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0)
-            d = pt1.elevationDiffMeters(pt2)
+            d = pt1.eleDiffMeters(pt2)
             self.assertEqual(0.0, d)
 
-        def test_elevationDiffMeters_1(self: TestTrackPoint):
+        def test_eleDiffMeters_1(self: TestTrackPoint):
             pt1 = TrackPoint(lat=0.0, lon=90.0, ele=99.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0, ele=100.0)
-            d = pt1.elevationDiffMeters(pt2)
-            #print(f'elevationDiffMeters_1: {d}')
+            d = pt1.eleDiffMeters(pt2)
+            #print(f'eleDiffMeters_1: {d}')
             self.assertEqual(1.0, d)
 
-        def test_elevationDiffMeters_neg_1(self: TestTrackPoint):
+        def test_eleDiffMeters_neg_1(self: TestTrackPoint):
             pt1 = TrackPoint(lat=0.0, lon=90.0, ele=100.0)
             pt2 = TrackPoint(lat=0.0, lon=89.0, ele=99.0)
-            d = pt1.elevationDiffMeters(pt2)
-            #print(f'elevationDiffMeters_neg_1: {d}')
+            d = pt1.eleDiffMeters(pt2)
+            #print(f'eleDiffMeters_neg_1: {d}')
             self.assertEqual(-1.0, d)
 
         def test_lat_lon_1deg_0_to_90(self: TestTrackPoint):
