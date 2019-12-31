@@ -24,14 +24,14 @@ def CsvReaderTrackList(reader: TextIO, dialect: str='excel') -> List[tp.TrackPoi
     pt: tp.TrackPoint = tp.mkTrackPoint()
     for row in csvReader:
         #print(f'row={row}')
-        pt.ele = float(row[0])
-        pt.lat = float(row[1])
-        pt.lon = float(row[2])
-        pt.brg = float(row[3])
-        pt.idx = int(row[4])
+        pt.idx = int(row[0])
+        pt.ele = float(row[1])
+        pt.lat = float(row[2])
+        pt.lon = float(row[3])
+        pt.brg = float(row[4])
         pt.tot = float(row[5])
         pt.dis = float(row[6])
-        pt.slp = float (row[7])
+        pt.slp = float(row[7])
         pt.spd = float(row[8])
         pt.hrt = float(row[9])
         pt.wts = float(row[10])
@@ -79,16 +79,16 @@ if __name__ == '__main__':
     class TestCsv(unittest.TestCase):
 
         def test_save_and_read_csv(self: TestCsv):
-            ele=1.0; lat=math.radians(2.0); lon=math.radians(3.0); brg=math.radians(4.0); idx=5; tot=6.0; dis=7.0
+            idx=1; ele=2.0; lat=math.radians(3.0); lon=math.radians(4.0); brg=math.radians(5.0); tot=6.0; dis=7.0
             slp=math.radians(8.0); spd=9.0; hrt=10.0; wts=11.0; rds=12.0; tim=13.0
-            pt: tp.TrackPoint = tp.mkTrackPoint(ele=ele, lat=lat, lon=lon, brg=brg, idx=idx, tot=tot, dis=dis, \
+            pt: tp.TrackPoint = tp.mkTrackPoint(idx=idx, ele=ele, lat=lat, lon=lon, brg=brg, tot=tot, dis=dis, \
                                                 slp=slp, spd=spd, hrt=hrt, wts=wts, rds=rds, tim=tim)
 
             # Test CsvStrTrackList
-            s1: str = f'{ele},{lat},{lon},{brg},{idx},{tot},{dis},{slp},{spd},{hrt},{wts},{rds},{tim}\r\n'
+            s1: str = f'{idx},{ele},{lat},{lon},{brg},{tot},{dis},{slp},{spd},{hrt},{wts},{rds},{tim}\r\n'
             tl1: List[tp.TrackPoint] = CsvStrTrackList(s1)
-            print(f'pt:     {pt}');
-            print(f'tl1[0]: {tl1[0]}');
+            #print(f'pt:     {pt}');
+            #print(f'tl1[0]: {tl1[0]}');
             self.assertTrue(tl1[0] == pt)
 
             # Test writeTrackListAsCsvToStr
