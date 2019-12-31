@@ -6,6 +6,7 @@ from tap import Tap
 import os
 import tcx_track_list as tcx_tl
 import csv_track_list as csx_tl
+import track_point as tp
 import path as p
 
 class ArgumentsParser(Tap):
@@ -35,7 +36,7 @@ def main():
         # Validated output file has csv extension and write it
         _, extension = os.path.splitext(args.out_filename)
         if extension == '.csv':
-            csx_tl.writeTrackListAsCsvToFile(path.trackList(), args.out_filename)
+            csx_tl.writeTrackListAsCsvToFile(path.trackList(), args.out_filename, header=tp.mkCsvHeader())
         else:
             raise ValueError(f"Unknown file extension:'{extension}' in {args.in_filename}, expecting '.csv'")
     except Exception as err:

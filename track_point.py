@@ -88,6 +88,13 @@ def mkTrackPoint(
 
     return pt
 
+def mkCsvHeader() -> List[str]:
+    """Make CSV Header, order must be identical to mkTrackPoint() and TrackPoint()"""
+    return ['idx','ele','lat','lon','brg','tot','dis','slp','spd','hrt','wts','rds','tim']
+
+def mkCsvHeaderStr() -> str:
+    return f'{",".join(str(s) for s in mkCsvHeader())}'
+
 def printList(tl: List[TrackPoint]) -> None:
     #print(f'len={len(tl)}')
     i: int
